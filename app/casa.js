@@ -25,6 +25,9 @@
       persistSession: true,
       autoRefreshToken: true,
       storageKey: 'casa-em-ordem-sessao',
+      // sessionStorage, não localStorage: fechou a aba, pede o PIN de
+      // novo. O guard ainda apaga a chave quando a página é recarregada.
+      storage: window.sessionStorage,
     },
   });
 
@@ -298,15 +301,18 @@
     },
 
     /**
-     * Compra parcelada: o banco gera uma parcela em cada fatura seguinte
-     * do cartão até fechar o número de parcelas. Devolve o id do grupo.
+     * Parcelamento, de cartão ou de boleto. No cartão as parcelas seguem o
+     * ciclo de fechamento; no boleto é carnê, com um vencimento por mês a
+     * partir da data informada. Devolve o id do grupo.
      */
-    async criarParcelada(o) {
-      return ok(await sb.rpc('criar_compra_parcelada', {
+    async criarParcelado(o) {
+      return ok(await sb.rpc('criar_parcelado', {
         p_descricao: o.descricao,
         p_valor_total: o.valorTotal,
-        p_cartao_id: o.cartaoId,
         p_num_parcelas: o.numParcelas,
+        p_forma: o.forma,
+        p_cartao_id: o.cartaoId || null,
+        p_vencimento: o.vencimento || null,
         p_data_compra: o.dataCompra,
         p_categoria_id: o.categoriaId || null,
         p_membro_id: o.membroId || null,
@@ -359,6 +365,19 @@
         .select('*, categorias(nome, slug), membros(nome)')
         .eq('cartao_id', cartaoId).eq('competencia', fechamento)
         .order('data'));
+    },
+
+    /**
+     * Boletos de um intervalo de vencimento. Ficam na tela de Faturas
+     * junto dos cartões porque a pergunta é a mesma: o que tenho a pagar.
+     */
+    async boletos(de, ate) {
+      var q = sb.from('saidas')
+        .select('*, categorias(nome, slug), membros(nome)')
+        .eq('forma_pagamento', 'boleto');
+      if (de) q = q.gte('vencimento', de);
+      if (ate) q = q.lte('vencimento', ate);
+      return ok(await q.order('vencimento'));
     },
 
     /** Parcelas que ainda vão cair em faturas futuras deste cartão. */

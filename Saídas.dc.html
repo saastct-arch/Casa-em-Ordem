@@ -119,19 +119,28 @@
         </div>
 
         <sc-if value="{{ isCredito }}" hint-placeholder-val="{{ false }}">
-          <div style="display:flex;flex-direction:column;gap:18px;">
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Cartão</label>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <sc-for list="{{ cartoes }}" as="c" hint-placeholder-count="2">
-                  <button type="button" onClick="{{ c.onSelect }}" style="{{ c.style }}">
-                    <span style="{{ c.swatchStyle }}"></span>
-                    {{ c.label }}
-                  </button>
-                </sc-for>
-              </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Cartão</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <sc-for list="{{ cartoes }}" as="c" hint-placeholder-count="2">
+                <button type="button" onClick="{{ c.onSelect }}" style="{{ c.style }}">
+                  <span style="{{ c.swatchStyle }}"></span>
+                  {{ c.label }}
+                </button>
+              </sc-for>
             </div>
+          </div>
+        </sc-if>
 
+        <sc-if value="{{ isBoleto }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Vencimento do boleto</label>
+            <input type="date" value="{{ form.vencimento }}" onChange="{{ onVencimentoChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;"></input>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ podeParcelar }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:18px;">
             <div style="display:flex;flex-direction:column;gap:8px;">
               <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Parcelamento</label>
               <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
@@ -148,9 +157,11 @@
                   <input type="number" min="2" max="24" value="{{ form.parcelas }}" onChange="{{ onParcelasChange }}" onBlur="{{ onParcelasBlur }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-numeric);font-size:15px;color:var(--text-primary);outline:none;max-width:140px;"></input>
                 </div>
                 <span style="font-size:13px;color:var(--text-secondary);">Valor de cada parcela: <strong style="color:var(--text-primary);font-family:var(--font-numeric);">R$ {{ parcelaValorFormatted }}</strong></span>
-                <span style="display:block;padding:10px 14px;border-radius:var(--radius-control);background:var(--color-accent-soft);color:var(--gold-700);font-size:13px;font-weight:500;">Este gasto vai aparecer em {{ form.parcelas }} faturas futuras deste cartão</span>
+                <span style="display:block;padding:10px 14px;border-radius:var(--radius-control);background:var(--color-accent-soft);color:var(--gold-700);font-size:13px;font-weight:500;">{{ parcelaAviso }}</span>
               </div>
             </sc-if>
+          </div>
+        </sc-if>
           </div>
         </sc-if>
 
@@ -293,7 +304,7 @@ class Component extends DCLogic {
     confirmDeleteId: null,
     confirmingEditScope: false,
     erro: '',
-    form: { valor: 0, data: hojeISO(), category: '', forma: 'pix', cartao: '', parcelado: false, parcelas: '2', membro: '', observacao: '' },
+    form: { valor: 0, data: hojeISO(), category: '', forma: 'pix', cartao: '', vencimento: hojeISO(), parcelado: false, parcelas: '2', membro: '', observacao: '' },
   };
 
   componentDidMount() {
@@ -344,6 +355,7 @@ class Component extends DCLogic {
         category: s.categorias[0] ? s.categorias[0].id : '',
         forma: 'pix',
         cartao: s.cartoes[0] ? s.cartoes[0].id : '',
+        vencimento: s.form.vencimento || hojeISO(),
         parcelado: false, parcelas: '2',
         membro: s.membros[0] ? s.membros[0].id : '',
         observacao: '',
@@ -353,6 +365,12 @@ class Component extends DCLogic {
 
   catSelecionada() {
     return this.state.categorias.find(c => c.id === this.state.form.category);
+  }
+
+  /** Só crédito e boleto se parcelam: pix e débito saem na hora. */
+  podeParcelar() {
+    const f = this.state.form.forma;
+    return f === 'credito' || f === 'boleto';
   }
 
   /** Salvar: parcelada existente pergunta o escopo antes de gravar. */
@@ -403,26 +421,38 @@ class Component extends DCLogic {
           categoriaId: f.category || null,
           membroId: f.membro || null,
         });
-      } else if (!this.state.editingId && f.forma === 'credito' && f.parcelado) {
-        if (!f.cartao) throw new Error('Escolha um cartão.');
-        await Casa.saidas.criarParcelada({
+      } else if (!this.state.editingId && this.podeParcelar() && f.parcelado) {
+        if (f.forma === 'credito' && !f.cartao) throw new Error('Escolha um cartão.');
+        if (f.forma === 'boleto' && !f.vencimento) throw new Error('Informe o vencimento do boleto.');
+        await Casa.saidas.criarParcelado({
           descricao: (this.catSelecionada() || {}).nome || 'Compra',
           valorTotal: f.valor,
-          cartaoId: f.cartao,
           numParcelas: parcelasNum,
+          forma: f.forma,
+          cartaoId: f.forma === 'credito' ? f.cartao : null,
+          vencimento: f.forma === 'boleto' ? f.vencimento : null,
           dataCompra: f.data,
           categoriaId: f.category || null,
           membroId: f.membro || null,
           observacao: f.observacao || null,
         });
       } else {
+        if (f.forma === 'boleto' && !f.vencimento) throw new Error('Informe o vencimento do boleto.');
+        // No boleto o dinheiro sai no vencimento, então é ele que define o
+        // mês do lançamento; a data de cadastro fica guardada à parte.
+        // É o mesmo critério das parcelas, senão boleto avulso e carnê
+        // cairiam em meses diferentes.
+        const ehBoleto = f.forma === 'boleto';
         const dados = {
           descricao: (this.catSelecionada() || {}).nome || 'Gasto',
-          valor: f.valor, data: f.data,
+          valor: f.valor,
+          data: ehBoleto ? f.vencimento : f.data,
+          data_compra: ehBoleto ? f.data : null,
           categoria_id: f.category || null,
           membro_id: f.membro || null,
           forma_pagamento: f.forma,
           cartao_id: f.forma === 'credito' ? (f.cartao || null) : null,
+          vencimento: f.forma === 'boleto' ? f.vencimento : null,
           observacao: f.observacao || null,
         };
         if (this.state.editingId) await Casa.saidas.atualizar(this.state.editingId, dados);
@@ -449,6 +479,7 @@ class Component extends DCLogic {
         category: entry.categoria_id || '',
         forma: entry.forma_pagamento,
         cartao: entry.cartao_id || (this.state.cartoes[0] ? this.state.cartoes[0].id : ''),
+        vencimento: entry.vencimento || this.state.form.vencimento || hojeISO(),
         parcelado: parcelada,
         parcelas: String(entry.parcela_total || 2),
         membro: entry.membro_id || '',
@@ -613,15 +644,25 @@ class Component extends DCLogic {
       showFuturoAviso: !!cofrinho,
       dividaNome: divida ? divida.nome : '',
       cofrinhoNome: cofrinho ? cofrinho.nome : '',
-      formas, isCredito: f.forma === 'credito', cartoes,
-      parceladoOptions, isParcelado: f.forma === 'credito' && f.parcelado,
+      formas,
+      isCredito: f.forma === 'credito',
+      isBoleto: f.forma === 'boleto',
+      podeParcelar: this.podeParcelar(),
+      cartoes,
+      parceladoOptions,
+      isParcelado: this.podeParcelar() && f.parcelado,
+      parcelaAviso: f.forma === 'boleto'
+        ? `Vão ser ${f.parcelas || 0} boletos, um por mês a partir do vencimento`
+        : `Este gasto vai aparecer em ${f.parcelas || 0} faturas futuras deste cartão`,
+      onVencimentoChange: (e) => this.setForm({ vencimento: e.target.value }),
       onParcelasChange: (e) => this.setForm({ parcelas: e.target.value.replace(/\D/g, '').slice(0, 2) }),
       onParcelasBlur: () => { const n = Number(f.parcelas); this.setForm({ parcelas: n ? String(Math.min(24, Math.max(2, n))) : '' }); },
       parcelaValorFormatted: formatBRL(parcelaValor),
       membros,
       canSave: f.valor > 0 && !!f.category
-        && (!(f.forma === 'credito') || !!f.cartao)
-        && (!(f.forma === 'credito' && f.parcelado) || (parcelasNum >= 2 && parcelasNum <= 24)),
+        && (f.forma !== 'credito' || !!f.cartao)
+        && (f.forma !== 'boleto' || !!f.vencimento)
+        && (!(this.podeParcelar() && f.parcelado) || (parcelasNum >= 2 && parcelasNum <= 24)),
       onValorChange: (v) => this.setForm({ valor: v }),
       onDataChange: (e) => this.setForm({ data: e.target.value }),
       onObservacaoChange: (e) => this.setForm({ observacao: e.target.value }),

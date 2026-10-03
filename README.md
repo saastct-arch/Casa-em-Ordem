@@ -26,6 +26,17 @@ tentativas.
 Para trocar o PIN, defina o secret `FAMILY_PIN` no projeto Supabase
 (Settings → Edge Functions → Secrets). Sem o secret, o padrão é `0557`.
 
+### Sessão
+
+A sessão fica no **sessionStorage**, não no localStorage: fechou a aba,
+pede o PIN de novo. Além disso, **recarregar a página derruba a sessão** e
+volta ao login.
+
+A distinção importa porque cada tela é um HTML próprio: trocar de aba é
+navegação (`navigate`), não recarga, e deslogar em todo carregamento
+tornaria o app inutilizável. O `guard.js` usa a Navigation Timing API para
+separar os dois casos.
+
 ### A trava das telas internas
 
 Toda tela que não seja o login carrega `app/guard.js` no `<head>`, **antes
@@ -72,6 +83,25 @@ e já calcula o vencimento.
 
 Dias que não existem no mês são ajustados: fechamento no dia 31 cai no dia
 28 (ou 29) em fevereiro.
+
+### Boleto
+
+Boleto tem **vencimento próprio**, informado pela família — o cartão herda
+o dele do ciclo da fatura, o boleto não tem ciclo nenhum. O vencimento é
+obrigatório (`boleto_exige_vencimento`), porque é ele que diz quando o
+dinheiro sai e se já está atrasado.
+
+Parcelado, vira carnê: um boleto por mês a partir do primeiro vencimento.
+O dia vem sempre do vencimento original, então o carnê não arrasta a data
+quando um mês é mais curto — 31/01 gera 28/02 e volta para 31/03.
+
+No boleto o lançamento entra no mês do **vencimento**, não no da data de
+cadastro, que fica guardada em `data_compra`. É o mesmo critério das
+parcelas de cartão; sem isso, boleto avulso e carnê cairiam em meses
+diferentes no relatório.
+
+A aba Faturas mostra o total de boletos do mês escolhido, marcando os
+vencidos, e o Resumo alerta sobre vencido e a vencer em até 7 dias.
 
 ### Parcelas: esta ou todas as futuras
 

@@ -192,6 +192,28 @@
         </div>
       </sc-if>
 
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="{{ boletoTone }}" icon="file-text" label="{{ boletoLabel }}" value="{{ boletoTotal }}" footer="{{ boletoFooter }}" hint-size="100%,150px"></x-import>
+
+      <sc-if value="{{ temBoletos }}" hint-placeholder-val="{{ true }}">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Boletos do mês" subtitle="{{ boletoSubtitulo }}" padding="8" hint-size="100%,200px" style="gap:0;">
+          <sc-for list="{{ boletos }}" as="bo" hint-placeholder-count="3">
+            <div style="{{ bo.rowStyle }}">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.CategoryChip" category="{{ bo.chipKey }}" label="{{ bo.categoria }}" size="sm" hint-size="auto,26px"></x-import>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:15px;font-weight:600;color:var(--text-primary);">R$ {{ bo.valorFormatted }}</span>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                  <span style="{{ bo.vencStyle }}">{{ bo.vencLabel }}</span>
+                  <sc-if value="{{ bo.isParcelado }}" hint-placeholder-val="{{ false }}">
+                    <span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:var(--radius-pill);background:var(--cream-200);color:var(--text-secondary);font-size:11px;font-weight:600;">{{ bo.parcelaTag }}</span>
+                  </sc-if>
+                </div>
+              </div>
+              <span style="font-size:13px;color:var(--text-secondary);">{{ bo.membro }}</span>
+            </div>
+          </sc-for>
+        </x-import>
+      </sc-if>
+
     </div>
     <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
       <div style="position:sticky;bottom:0;">
@@ -230,6 +252,16 @@ function iso(d) {
 function competenciaDoMes(ano, mes, diaFechamento) {
   return iso(diaSeguro(ano, mes, diaFechamento));
 }
+function diasEntre(aISO, bISO) {
+  const [ay, am, ad] = aISO.split('-').map(Number);
+  const [by, bm, bd] = bISO.split('-').map(Number);
+  return Math.round((new Date(by, bm - 1, bd) - new Date(ay, am - 1, ad)) / 86400000);
+}
+function diaMesCurto(isoData) {
+  const MESES_ABREV = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const [y, m, d] = isoData.split('-').map(Number);
+  return String(d).padStart(2, '0') + ' ' + MESES_ABREV[m - 1];
+}
 function mesLabelDeISO(s) {
   const [y, m] = s.split('-').map(Number);
   return MESES[m - 1] + ' ' + y;
@@ -255,6 +287,7 @@ class Component extends DCLogic {
   state = {
     isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
     cartoes: [],
+    boletos: [],
     detalhe: null,
     selectedId: null,
     mesRef: new Date().getMonth(),
@@ -281,7 +314,13 @@ class Component extends DCLogic {
   async carregar() {
     if (!(await Casa.auth.exigirSessao())) return;
     try {
-      const cartoes = await Casa.cartoes.listar();
+      const primeiro = iso(new Date(this.state.anoRef, this.state.mesRef, 1));
+      const ultimo = iso(new Date(this.state.anoRef, this.state.mesRef + 1, 0));
+      const [cartoes, boletos] = await Promise.all([
+        Casa.cartoes.listar(),
+        Casa.saidas.boletos(primeiro, ultimo),
+      ]);
+      this.setState({ boletos });
       const selectedId = this.state.selectedId && cartoes.some(c => c.id === this.state.selectedId)
         ? this.state.selectedId
         : (cartoes[0] ? cartoes[0].id : null);
@@ -435,6 +474,53 @@ class Component extends DCLogic {
     }
   }
 
+  /** Bloco de boletos do mês: total, lista e o aviso de vencido. */
+  valoresDosBoletos() {
+    const s = this.state;
+    const hoje = iso(new Date());
+    const total = s.boletos.reduce((t, b) => t + Number(b.valor), 0);
+    const vencidos = s.boletos.filter(b => b.vencimento < hoje);
+    const mes = MESES[s.mesRef] + ' ' + s.anoRef;
+
+    const boletos = s.boletos.map((b, i, arr) => {
+      const venceu = b.vencimento < hoje;
+      const dias = diasEntre(hoje, b.vencimento);
+      return {
+        chipKey: Casa.categorias.chipKey(b.categorias),
+        categoria: (b.categorias && b.categorias.nome) || 'Sem categoria',
+        valorFormatted: formatBRL(Number(b.valor)),
+        isParcelado: !!b.parcela_grupo,
+        parcelaTag: b.parcela_grupo ? `${b.parcela_num}/${b.parcela_total}` : '',
+        membro: (b.membros && b.membros.nome) || '',
+        vencLabel: venceu
+          ? `Venceu em ${diaMesCurto(b.vencimento)}`
+          : (dias === 0 ? 'Vence hoje' : `Vence em ${diaMesCurto(b.vencimento)}`),
+        vencStyle: {
+          fontSize: 12, fontWeight: 600,
+          color: venceu ? 'var(--color-alert)' : 'var(--text-secondary)',
+        },
+        rowStyle: {
+          display: 'flex', alignItems: 'center', gap: 12, padding: '14px 10px',
+          borderBottom: i < arr.length - 1 ? '1px solid var(--border-default)' : 'none',
+        },
+      };
+    });
+
+    return {
+      boletos,
+      temBoletos: s.boletos.length > 0,
+      boletoTotal: total,
+      boletoLabel: `Boletos de ${mes}`,
+      boletoTone: vencidos.length ? 'alert' : 'accent',
+      boletoFooter: s.boletos.length === 0
+        ? 'Nenhum boleto com vencimento neste mês'
+        : (vencidos.length
+            ? `${s.boletos.length} boleto(s) · ${vencidos.length} já vencido(s)`
+            : `${s.boletos.length} boleto(s) a pagar`),
+      boletoSubtitulo: `Vencimento em ${mes}`,
+    };
+  }
+
   renderVals() {
     const s = this.state;
     const f = s.form;
@@ -490,6 +576,7 @@ class Component extends DCLogic {
       onSave: () => this.save(),
       swatches,
       cartoes,
+      ...this.valoresDosBoletos(),
       selected: s.detalhe && Object.assign({}, s.detalhe, {
         acoesMsg: s.confirmandoExclusao
           ? (s.lancamentosDoCartao > 0

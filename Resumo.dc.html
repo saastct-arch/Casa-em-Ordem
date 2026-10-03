@@ -204,7 +204,7 @@ class Component extends DCLogic {
   state = {
     isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
     period: mesAtualPeriod(),
-    entradas: [], saidas: [], dividas: [], cofrinhos: [], faturas: [],
+    entradas: [], saidas: [], dividas: [], cofrinhos: [], faturas: [], boletos: [],
     historico: [],
     erro: '',
   };
@@ -223,14 +223,21 @@ class Component extends DCLogic {
   async carregar() {
     if (!(await Casa.auth.exigirSessao())) return;
     try {
-      const [entradas, saidas, dividas, cofrinhos, faturas] = await Promise.all([
+      // Janela dos boletos: o que venceu há pouco e o que vence logo.
+      // Sem isso um boleto atrasado só apareceria na aba Faturas.
+      const hojeD = new Date();
+      const de = iso(new Date(hojeD.getFullYear(), hojeD.getMonth(), hojeD.getDate() - 60));
+      const ate = iso(new Date(hojeD.getFullYear(), hojeD.getMonth(), hojeD.getDate() + 7));
+
+      const [entradas, saidas, dividas, cofrinhos, faturas, boletos] = await Promise.all([
         Casa.entradas.doPeriodo(this.state.period),
         Casa.saidas.doPeriodo(this.state.period),
         Casa.dividas.listar(),
         Casa.cofrinhos.listar(),
         Casa.faturas.listar(),
+        Casa.saidas.boletos(de, ate),
       ]);
-      this.setState({ entradas, saidas, dividas, cofrinhos, faturas, erro: '' });
+      this.setState({ entradas, saidas, dividas, cofrinhos, faturas, boletos, erro: '' });
       this.carregarHistorico();
     } catch (e) {
       this.setState({ erro: e.message });
@@ -354,6 +361,18 @@ class Component extends DCLogic {
     });
 
     const alerts = [];
+
+    // Boleto vencido vem primeiro: é o que custa juros.
+    s.boletos.forEach(b => {
+      const nome = (b.categorias && b.categorias.nome) || 'Boleto';
+      const dias = diasAte(b.vencimento);
+      if (dias < 0) {
+        alerts.push(`Boleto de ${nome} venceu ${dias === -1 ? 'ontem' : 'há ' + Math.abs(dias) + ' dias'}`);
+      } else if (dias <= 7) {
+        alerts.push(`Boleto de ${nome} vence ${dias === 0 ? 'hoje' : dias === 1 ? 'amanhã' : 'em ' + dias + ' dias'}`);
+      }
+    });
+
     aVencer.forEach(f => {
       const diasFecha = diasAte(f.fechamento);
       const diasVence = diasAte(f.vencimento);
