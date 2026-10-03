@@ -126,6 +126,30 @@ de saída, criada por trigger. Lançar uma saída nela abate a dívida ou
 engorda o cofrinho. Categoria criada pela família fica sem slug e aparece
 com o estilo neutro, igual ao protótipo.
 
+## Marca e compartilhamento
+
+A marca é a casinha do próprio design system (ícone `house`, lucide/ISC)
+no verde `--emerald-700`. Os fontes ficam em `brand/` como **SVG**, e os
+PNG são gerados a partir deles — então aumentar de tamanho nunca borra.
+
+| Arquivo | Onde aparece |
+|---|---|
+| `icon.svg` | aba do navegador (vetorial, qualquer tamanho) |
+| `favicon.ico` | navegadores antigos e barra de favoritos (16/32/48) |
+| `apple-touch-icon.png` | tela de início do iPhone (180px, fundo cheio) |
+| `icon-192.png`, `icon-512.png` | Android e instalação como app |
+| `icon-maskable-512.png` | Android, que recorta as bordas |
+| `og-image.png` | prévia ao mandar o link no WhatsApp, Telegram, etc. |
+| `manifest.webmanifest` | nome, cores e ícones ao instalar na tela de início |
+
+O ícone da aba usa a casinha branca sobre o verde cheio, não o círculo
+claro do login: a 16px um círculo `--emerald-100` some no fundo branco da
+aba. A versão clara (igual à do login) é a que aparece na imagem de
+compartilhamento, onde há espaço.
+
+Para regerar os PNG depois de mexer nos SVG, rasterize `brand/*.svg` e
+`brand/og.html` nos tamanhos da tabela.
+
 ## Pontos em aberto
 
 - **Editar o número de parcelas** de uma compra existente refaz o grupo
