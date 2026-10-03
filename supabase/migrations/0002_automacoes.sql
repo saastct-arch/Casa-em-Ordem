@@ -6,7 +6,7 @@
 -- Monta uma data válida mesmo quando o dia não existe no mês
 -- (fechamento dia 31 em fevereiro vira dia 28/29).
 create or replace function data_segura(p_ano int, p_mes int, p_dia int)
-returns date language sql immutable as $$
+returns date language sql immutable set search_path = public as $$
   select make_date(
     p_ano, p_mes,
     least(p_dia, extract(day from (make_date(p_ano, p_mes, 1)
@@ -18,7 +18,7 @@ $$;
 -- O ciclo é (fechamento anterior, fechamento atual]: comprou até o dia do
 -- fechamento, entra na fatura que fecha neste mês; depois disso, na próxima.
 create or replace function fatura_competencia(p_data date, p_dia_fechamento int)
-returns date language sql immutable as $$
+returns date language sql immutable set search_path = public as $$
   select case
     when extract(day from p_data)::int <= p_dia_fechamento then
       data_segura(extract(year from p_data)::int,
@@ -34,7 +34,7 @@ $$;
 create or replace function fatura_vencimento(p_competencia date,
                                              p_dia_fechamento int,
                                              p_dia_vencimento int)
-returns date language sql immutable as $$
+returns date language sql immutable set search_path = public as $$
   select case
     when p_dia_vencimento > p_dia_fechamento then
       data_segura(extract(year from p_competencia)::int,
