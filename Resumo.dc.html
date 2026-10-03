@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<script src="./app/vendor/supabase.umd.js"></script>
+<script src="./app/casa.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/base.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
+  <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
+  <style>
+    body{margin:0;}
+    a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
+  </style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:var(--bg-app);font-family:var(--font-body);">
+  <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Sidebar" active="resumo" on-select="{{ onNavigate }}" hint-size="248px,100%" style="position:sticky;top:0;height:100vh;"></x-import>
+  </sc-if>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:20px;">
+
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Souza" title="Resumo" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;"
+          hint-size="100%,60px"></x-import>
+        <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
+      </div>
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" hint-size="100%,180px" style="gap:18px;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">Olá, família Souza</span>
+          <div style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:700;font-size:clamp(32px,6vw,44px);letter-spacing:-0.025em;color:var(--text-primary);line-height:1.05;">
+            R$ {{ saldoFormatted }}
+          </div>
+          <span style="font-size:13px;color:var(--text-secondary);">Saldo disponível em outubro</span>
+        </div>
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.ProgressBar" tone="{{ progressTone }}" value="{{ pctComprometida }}" label="Renda comprometida" caption="{{ progressCaption }}" hint-size="100%,40px"></x-import>
+      </x-import>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;">
+
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Saídas por categoria" subtitle="Outubro 2026" hint-size="100%,260px">
+          <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+            <div style="{{ donutStyle }}"></div>
+            <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:140px;">
+              <sc-for list="{{ categories }}" as="c" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;">
+                  <span style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-weight:500;">
+                    <span style="width:10px;height:10px;border-radius:50%;background:{{ c.color }};display:inline-block;"></span>
+                    {{ c.label }}
+                  </span>
+                  <span style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:600;color:var(--text-primary);">{{ c.formatted }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </x-import>
+
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Entradas x saídas" subtitle="Últimos 6 meses" hint-size="100%,260px">
+          <div style="display:flex;align-items:center;gap:14px;font-size:12px;color:var(--text-secondary);">
+            <span style="display:flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:50%;background:var(--money-in);display:inline-block;"></span>Entradas</span>
+            <span style="display:flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:50%;background:var(--money-out);display:inline-block;"></span>Saídas</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:14px;height:130px;padding-top:8px;">
+            <sc-for list="{{ months }}" as="m" hint-placeholder-count="6">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;">
+                <div style="flex:1;display:flex;align-items:flex-end;gap:3px;width:100%;justify-content:center;">
+                  <div style="{{ m.inBarStyle }}"></div>
+                  <div style="{{ m.outBarStyle }}"></div>
+                </div>
+                <span style="font-size:11px;color:var(--text-secondary);font-weight:500;">{{ m.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </x-import>
+
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Dívidas em aberto" subtitle="3 maiores" hint-size="100%,260px">
+          <div style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:700;font-size:28px;color:var(--color-alert);letter-spacing:-0.02em;">R$ {{ debtsTotalFormatted }}</div>
+          <div>
+            <sc-for list="{{ debts }}" as="d" hint-placeholder-count="3">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.ListItem" title="{{ d.title }}" meta="{{ d.meta }}" category="divida" kind="debt" amount="{{ d.amount }}" divider="{{ d.divider }}" hint-size="100%,60px"></x-import>
+            </sc-for>
+          </div>
+        </x-import>
+
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Futuro" subtitle="3 cofrinhos ativos" hint-size="100%,260px">
+          <div style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:700;font-size:28px;color:var(--gold-700);letter-spacing:-0.02em;">R$ {{ futuroTotalFormatted }}</div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <sc-for list="{{ goals }}" as="g" hint-placeholder-count="3">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.ProgressBar" tone="accent" label="{{ g.label }}" current="{{ g.current }}" target="{{ g.target }}" hint-size="100%,40px"></x-import>
+            </sc-for>
+          </div>
+        </x-import>
+
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Faturas próximas" subtitle="Vencimento em até 7 dias" hint-size="100%,220px">
+          <div>
+            <sc-for list="{{ faturas }}" as="f" hint-placeholder-count="2">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.ListItem" title="{{ f.title }}" meta="{{ f.meta }}" amount="{{ f.amount }}" divider="{{ f.divider }}" hint-size="100%,60px"></x-import>
+            </sc-for>
+          </div>
+        </x-import>
+
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Alertas" subtitle="Fique de olho" hint-size="100%,220px">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="2">
+              <span style="display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:var(--radius-pill);background:var(--color-alert-soft);color:var(--color-alert);font-size:13px;font-weight:600;">{{ a }}</span>
+            </sc-for>
+          </div>
+        </x-import>
+
+      </div>
+    </div>
+
+    <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+      <div style="position:sticky;bottom:0;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.BottomNav" active="resumo" on-select="{{ onNavigate }}" hint-size="100%,68px"></x-import>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+function formatBRL(n) {
+  return Math.abs(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+// Cores do donut por slug; categoria criada pela família entra no ciclo
+// das cores restantes, para o gráfico nunca ficar monocromático.
+const CAT_CORES = {
+  casa: 'var(--cat-casa)', carro: 'var(--cat-carro)', pessoal: 'var(--cat-pessoal)',
+  divida: 'var(--cat-divida)', futuro: 'var(--cat-futuro)', outros: 'var(--cat-outros)',
+};
+const CICLO_CORES = ['var(--cat-casa)', 'var(--cat-carro)', 'var(--cat-pessoal)', 'var(--cat-divida)', 'var(--cat-futuro)', 'var(--cat-outros)'];
+
+function iso(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function mesAtualPeriod() {
+  const d = new Date();
+  return { mode: 'mes', month: d.getMonth(), year: d.getFullYear(), label: MESES[d.getMonth()] + ' ' + d.getFullYear() };
+}
+function diasAte(isoData) {
+  const [y, m, d] = isoData.split('-').map(Number);
+  const alvo = new Date(y, m - 1, d);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  return Math.round((alvo - hoje) / 86400000);
+}
+function diaMesCurto(isoData) {
+  const [y, m, d] = isoData.split('-').map(Number);
+  return String(d).padStart(2, '0') + ' ' + MESES_ABREV[m - 1].toLowerCase();
+}
+
+const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html' };
+
+class Component extends DCLogic {
+  state = {
+    isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    period: mesAtualPeriod(),
+    entradas: [], saidas: [], dividas: [], cofrinhos: [], faturas: [],
+    historico: [],
+    erro: '',
+  };
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ isDesktop: window.innerWidth >= 900 });
+    window.addEventListener('resize', this.onResize);
+    this.carregar();
+    this.pararEscuta = Casa.aoMudar(['entradas', 'saidas', 'dividas', 'cofrinhos', 'cartoes'], () => this.carregar());
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.onResize);
+    this.pararEscuta && this.pararEscuta();
+  }
+
+  async carregar() {
+    if (!(await Casa.auth.exigirSessao())) return;
+    try {
+      const [entradas, saidas, dividas, cofrinhos, faturas] = await Promise.all([
+        Casa.entradas.doPeriodo(this.state.period),
+        Casa.saidas.doPeriodo(this.state.period),
+        Casa.dividas.listar(),
+        Casa.cofrinhos.listar(),
+        Casa.faturas.listar(),
+      ]);
+      this.setState({ entradas, saidas, dividas, cofrinhos, faturas, erro: '' });
+      this.carregarHistorico();
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  /** Seis meses de entradas e saídas para as barras comparativas. */
+  async carregarHistorico() {
+    try {
+      const hoje = new Date();
+      const inicio = new Date(hoje.getFullYear(), hoje.getMonth() - 5, 1);
+      const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+      const faixa = { mode: 'periodo', startDate: iso(inicio), endDate: iso(fim) };
+
+      const [ents, sais] = await Promise.all([
+        Casa.entradas.doPeriodo(faixa),
+        Casa.saidas.doPeriodo(faixa),
+      ]);
+
+      const buckets = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+        buckets.push({ chave: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), label: MESES_ABREV[d.getMonth()], inVal: 0, outVal: 0 });
+      }
+      const porChave = {};
+      buckets.forEach(b => { porChave[b.chave] = b; });
+
+      ents.forEach(e => { const b = porChave[e.data.slice(0, 7)]; if (b) b.inVal += Number(e.valor); });
+      sais.forEach(e => { const b = porChave[e.data.slice(0, 7)]; if (b) b.outVal += Number(e.valor); });
+
+      this.setState({ historico: buckets });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  renderVals() {
+    const s = this.state;
+
+    const totalEntradas = s.entradas.reduce((t, e) => t + Number(e.valor), 0);
+    const totalSaidas = s.saidas.reduce((t, e) => t + Number(e.valor), 0);
+    const saldo = totalEntradas - totalSaidas;
+
+    const pctComprometida = totalEntradas > 0
+      ? Math.min(100, Math.round((totalSaidas / totalEntradas) * 100))
+      : 0;
+    const progressTone = pctComprometida > 90 ? 'alert' : pctComprometida > 70 ? 'accent' : 'primary';
+
+    // saídas por categoria, para o donut
+    const porCat = {};
+    s.saidas.forEach(e => {
+      const nome = (e.categorias && e.categorias.nome) || 'Sem categoria';
+      const slug = (e.categorias && e.categorias.slug) || null;
+      if (!porCat[nome]) porCat[nome] = { label: nome, slug: slug, value: 0 };
+      porCat[nome].value += Number(e.valor);
+    });
+    const catList = Object.keys(porCat).map(k => porCat[k]).sort((a, b) => b.value - a.value);
+    const catTotal = catList.reduce((t, c) => t + c.value, 0);
+
+    let acc = 0;
+    let iCor = 0;
+    const categories = catList.map(c => {
+      const cor = c.slug && CAT_CORES[c.slug] ? CAT_CORES[c.slug] : CICLO_CORES[iCor++ % CICLO_CORES.length];
+      const pct = catTotal > 0 ? (c.value / catTotal) * 100 : 0;
+      acc += pct;
+      return { label: c.label, color: cor, formatted: 'R$ ' + formatBRL(c.value), pctEnd: acc };
+    });
+    let prev = 0;
+    const stops = categories.map(c => { const st = `${c.color} ${prev}% ${c.pctEnd}%`; prev = c.pctEnd; return st; }).join(', ');
+
+    const valores = s.historico.flatMap(m => [m.inVal, m.outVal]);
+    const maxVal = valores.length ? Math.max.apply(null, valores.concat([1])) : 1;
+    const months = s.historico.map(m => ({
+      label: m.label,
+      inBarStyle: { width: 10, borderRadius: 4, background: 'var(--money-in)', height: ((m.inVal / maxVal) * 100) + '%' },
+      outBarStyle: { width: 10, borderRadius: 4, background: 'var(--money-out)', height: ((m.outVal / maxVal) * 100) + '%' },
+    }));
+
+    const emAberto = s.dividas.filter(d => !d.quitada && Number(d.saldo_atual) > 0);
+    const debts = emAberto.map((d, i) => {
+      const parcela = Number(d.valor_parcela) || 0;
+      const pago = Math.max(0, Number(d.valor_total) - Number(d.saldo_atual));
+      const pagas = parcela > 0 ? Math.round(pago / parcela) : 0;
+      return {
+        title: d.nome,
+        meta: d.parcelas_total ? `Parcela ${Math.min(pagas + 1, d.parcelas_total)}/${d.parcelas_total}` : 'Saldo devedor',
+        amount: Number(d.saldo_atual),
+        divider: i < emAberto.length - 1,
+      };
+    });
+
+    const goals = s.cofrinhos.map(c => ({
+      label: c.nome,
+      current: Number(c.saldo_atual),
+      target: c.meta_valor == null ? null : Number(c.meta_valor),
+    }));
+
+    // faturas que ainda vão vencer, da mais próxima para a mais distante
+    const hojeISO = iso(new Date());
+    const aVencer = s.faturas
+      .filter(f => f.vencimento >= hojeISO)
+      .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+    const faturas = aVencer.map((f, i) => {
+      const dias = diasAte(f.vencimento);
+      return {
+        title: 'Cartão ' + f.cartao_nome,
+        meta: (dias === 0 ? 'Vence hoje' : dias === 1 ? 'Vence amanhã' : `Vence em ${dias} dias`) + ' · ' + diaMesCurto(f.vencimento),
+        amount: Number(f.total),
+        divider: i < aVencer.length - 1,
+      };
+    });
+
+    const alerts = [];
+    aVencer.forEach(f => {
+      const diasFecha = diasAte(f.fechamento);
+      const diasVence = diasAte(f.vencimento);
+      if (diasFecha >= 0 && diasFecha <= 3) {
+        alerts.push(`Fatura ${f.cartao_nome} fecha ${diasFecha === 0 ? 'hoje' : 'em ' + diasFecha + ' dia(s)'}`);
+      }
+      if (diasVence >= 0 && diasVence <= 7) {
+        alerts.push(`Cartão ${f.cartao_nome} vence ${diasVence === 0 ? 'hoje' : 'em ' + diasVence + ' dia(s)'}`);
+      }
+    });
+
+    return {
+      isDesktop: s.isDesktop,
+      contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
+      period: s.period,
+      onPeriodChange: (next) => this.setState({ period: next }, () => this.carregar()),
+      onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
+      onSettings: () => { window.location.href = 'Configurações.dc.html'; },
+      saldoFormatted: formatBRL(saldo),
+      pctComprometida,
+      progressTone,
+      progressCaption: `${pctComprometida}% da renda já comprometida este mês`,
+      categories,
+      donutStyle: {
+        width: 120, height: 120, borderRadius: '50%', flexShrink: 0,
+        background: categories.length ? `conic-gradient(${stops})` : 'var(--cream-200)',
+      },
+      months,
+      debts,
+      debtsTotalFormatted: formatBRL(emAberto.reduce((t, d) => t + Number(d.saldo_atual), 0)),
+      goals,
+      futuroTotalFormatted: formatBRL(s.cofrinhos.reduce((t, c) => t + Number(c.saldo_atual), 0)),
+      faturas,
+      alerts,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+/* Self-hosted variable webfonts (latin subset, Google Fonts, OFL).
+   Manrope → display/headings. IBM Plex Sans → body, UI and all monetary numbers. */
+@font-face{font-family:'Manrope';font-style:normal;font-weight:500 800;font-display:swap;src:url('../assets/fonts/Manrope-Variable.woff2') format('woff2');}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:400 700;font-display:swap;src:url('../assets/fonts/IBMPlexSans-Variable.woff2') format('woff2');}

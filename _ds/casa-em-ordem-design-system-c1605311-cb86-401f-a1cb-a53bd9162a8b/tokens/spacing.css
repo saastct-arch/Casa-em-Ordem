@@ -1,0 +1,9 @@
+:root{
+--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;--space-16:64px;
+
+--radius-sm:6px;--radius-control:10px;--radius-md:14px;--radius-card:20px;--radius-pill:999px;
+
+--control-h-sm:36px;--control-h:44px;--control-h-lg:52px;
+
+--sidebar-w:248px;--bottom-nav-h:68px;--content-max:1120px;
+}

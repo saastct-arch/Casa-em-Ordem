@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<script src="./app/vendor/supabase.umd.js"></script>
+<script src="./app/casa.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/base.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
+  <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
+  <style>
+    body{margin:0;}
+    a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
+  </style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:var(--bg-app);font-family:var(--font-body);">
+  <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Sidebar" active="futuro" on-select="{{ onNavigate }}" hint-size="248px,100%" style="position:sticky;top:0;height:100vh;"></x-import>
+  </sc-if>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Souza" title="Futuro" month="9" year="2026" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="accent" icon="piggy-bank" label="Total guardado" value="{{ totalGeral }}" hint-size="100%,130px"></x-import>
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="{{ toggleIcon }}" on-click="{{ onToggleForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
+
+      <sc-if value="{{ formOpen }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Novo cofrinho" hint-size="100%,260px" style="gap:16px;">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.TextInput" label="Nome" value="{{ form.nome }}" on-change="{{ onNomeChange }}" placeholder="Ex.: Viagem de férias" hint-size="100%,68px"></x-import>
+          <sc-if value="{{ !metaOpen }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ onOpenMeta }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px;border-radius:var(--radius-pill);background:transparent;border:1px dashed var(--border-strong);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;">+ Definir meta</button>
+          </sc-if>
+          <sc-if value="{{ metaOpen }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Meta (opcional)" value="{{ form.meta }}" on-change="{{ onMetaChange }}" hint-size="100%,68px"></x-import>
+          </sc-if>
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSave }}" on-click="{{ onSave }}" hint-size="100%,52px">Criar cofrinho</x-import>
+        </x-import>
+      </sc-if>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;">
+        <sc-for list="{{ goals }}" as="g" hint-placeholder-count="3">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" hint-size="100%,280px" style="gap:16px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="width:44px;height:44px;flex-shrink:0;border-radius:12px;background:var(--color-accent-soft);color:var(--gold-700);display:flex;align-items:center;justify-content:center;">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="piggy-bank" size="22" hint-size="22px,22px"></x-import>
+              </span>
+              <span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--text-primary);">{{ g.nome }}</span>
+            </div>
+
+            <div style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:700;font-size:clamp(26px,6vw,34px);letter-spacing:-0.02em;color:var(--gold-700);">R$ {{ g.saldoFormatted }}</div>
+
+            <sc-if value="{{ g.hasMeta }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.ProgressBar" tone="accent" current="{{ g.saldo }}" target="{{ g.meta }}" hint-size="100%,40px"></x-import>
+            </sc-if>
+            <sc-if value="{{ !g.hasMeta }}" hint-placeholder-val="{{ true }}">
+              <span style="font-size:13px;color:var(--text-secondary);">Sem meta definida</span>
+            </sc-if>
+
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="soft" size="sm" on-click="{{ g.onRendimento }}" hint-size="auto,36px">Rendimento</x-import>
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="soft" size="sm" on-click="{{ g.onSacar }}" hint-size="auto,36px">Sacar</x-import>
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ g.onHistorico }}" hint-size="auto,36px">Histórico</x-import>
+            </div>
+
+            <sc-if value="{{ g.actionOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:10px;padding-top:4px;border-top:1px solid var(--border-default);">
+                <label style="font-size:13px;font-weight:600;color:var(--text-primary);">{{ g.actionLabel }}</label>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" value="{{ g.actionValue }}" on-change="{{ g.onActionValueChange }}" hint-size="100%,44px"></x-import>
+                <div style="display:flex;gap:8px;">
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="sm" full-width="{{ true }}" on-click="{{ g.onConfirmAction }}" hint-size="auto,36px">Confirmar</x-import>
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" full-width="{{ true }}" on-click="{{ g.onCancelAction }}" hint-size="auto,36px">Cancelar</x-import>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ g.historicoOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:2px;padding-top:4px;border-top:1px solid var(--border-default);">
+                <sc-for list="{{ g.historico }}" as="h" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-default);">
+                    <span style="{{ h.iconWrapStyle }}">
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="{{ h.icon }}" size="15" hint-size="15px,15px"></x-import>
+                    </span>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+                      <span style="font-size:13px;font-weight:600;color:var(--text-primary);">{{ h.tipoLabel }}</span>
+                      <span style="font-size:12px;color:var(--text-secondary);">{{ h.dataLabel }}</span>
+                    </div>
+                    <span style="{{ h.valorStyle }}">{{ h.valorFormatted }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </x-import>
+        </sc-for>
+      </div>
+
+    </div>
+    <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+      <div style="position:sticky;bottom:0;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.BottomNav" active="futuro" on-select="{{ onNavigate }}" hint-size="100%,68px"></x-import>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+function formatBRL(n) {
+  return Math.abs(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+const MESES_LONGO = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function dateLabel(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${String(d).padStart(2, '0')} de ${MESES_LONGO[m - 1]}`;
+}
+
+const TIPO_META = {
+  aporte: { label: 'Aporte', icon: 'plus', bg: 'var(--color-primary-soft)', fg: 'var(--color-primary)' },
+  rendimento: { label: 'Rendimento', icon: 'trending-up', bg: 'var(--color-accent-soft)', fg: 'var(--gold-700)' },
+  saque: { label: 'Saque', icon: 'arrow-down-left', bg: 'var(--cream-200)', fg: 'var(--text-secondary)' },
+};
+
+const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html' };
+
+class Component extends DCLogic {
+  state = {
+    isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    goals: [],
+    historicos: {},
+    formOpen: false, metaOpen: false,
+    form: { nome: '', meta: 0 },
+    openActionId: null, actionType: null, actionValue: 0,
+    openHistoricoId: null,
+    erro: '',
+  };
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ isDesktop: window.innerWidth >= 900 });
+    window.addEventListener('resize', this.onResize);
+    this.carregar();
+    // O saldo sobe sozinho quando alguém lança saída na categoria do
+    // cofrinho, e cai no saque — por isso escuta saidas e entradas.
+    this.pararEscuta = Casa.aoMudar(['cofrinhos', 'saidas', 'entradas'], () => this.carregar());
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.onResize);
+    this.pararEscuta && this.pararEscuta();
+  }
+
+  async carregar() {
+    if (!(await Casa.auth.exigirSessao())) return;
+    try {
+      this.setState({ goals: await Casa.cofrinhos.listar(), erro: '' });
+      if (this.state.openHistoricoId) this.carregarHistorico(this.state.openHistoricoId);
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  async carregarHistorico(id) {
+    try {
+      const lista = await Casa.cofrinhos.historico(id);
+      this.setState({ historicos: { ...this.state.historicos, [id]: lista } });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  toggleHistorico(g) {
+    const abrindo = this.state.openHistoricoId !== g.id;
+    this.setState({ openHistoricoId: abrindo ? g.id : null, openActionId: null });
+    if (abrindo) this.carregarHistorico(g.id);
+  }
+
+  openAction(id, type) { this.setState({ openActionId: id, actionType: type, actionValue: 0, openHistoricoId: null }); }
+  cancelAction() { this.setState({ openActionId: null, actionType: null, actionValue: 0 }); }
+
+  async confirmAction(goal) {
+    const { actionType, actionValue } = this.state;
+    if (!actionValue) return this.cancelAction();
+    try {
+      if (actionType === 'rendimento') {
+        // A tela pede o novo saldo; o banco guarda a diferença como
+        // ajuste e a trigger reposiciona o saldo do cofrinho.
+        const diff = actionValue - Number(goal.saldo_atual);
+        if (diff !== 0) await Casa.cofrinhos.rendimento(goal.id, diff);
+      } else {
+        // Saque: reduz o cofrinho e cria a entrada "Resgate".
+        const saque = Math.min(actionValue, Number(goal.saldo_atual));
+        if (saque > 0) await Casa.cofrinhos.sacar(goal.id, saque);
+      }
+      this.setState({ openActionId: null, actionType: null, actionValue: 0, erro: '' });
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message, openActionId: null, actionType: null, actionValue: 0 });
+    }
+  }
+
+  async save() {
+    const f = this.state.form;
+    if (!f.nome) return;
+    try {
+      await Casa.cofrinhos.criar({
+        nome: f.nome,
+        meta_valor: this.state.metaOpen && f.meta > 0 ? f.meta : null,
+      });
+      this.setState({ formOpen: false, metaOpen: false, form: { nome: '', meta: 0 }, erro: '' });
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  renderVals() {
+    const s = this.state;
+    const goals = s.goals.map(g => {
+      const actionOpen = s.openActionId === g.id;
+      const historicoOpen = s.openHistoricoId === g.id;
+      const saldo = Number(g.saldo_atual);
+      const meta = g.meta_valor == null ? null : Number(g.meta_valor);
+      return {
+        nome: g.nome, saldo: saldo, meta: meta, hasMeta: !!meta,
+        saldoFormatted: formatBRL(saldo),
+        onRendimento: () => this.openAction(g.id, 'rendimento'),
+        onSacar: () => this.openAction(g.id, 'saque'),
+        onHistorico: () => this.toggleHistorico(g),
+        actionOpen, actionLabel: s.actionType === 'rendimento' ? 'Novo saldo atual' : 'Valor a sacar',
+        actionValue: actionOpen ? s.actionValue : 0,
+        onActionValueChange: (v) => this.setState({ actionValue: v }),
+        onConfirmAction: () => this.confirmAction(g),
+        onCancelAction: () => this.cancelAction(),
+        historicoOpen,
+        historico: (s.historicos[g.id] || []).map(h => {
+          const t = TIPO_META[h.tipo];
+          const sign = h.tipo === 'saque' ? '− ' : '+ ';
+          return {
+            icon: t.icon, tipoLabel: t.label, dataLabel: dateLabel(h.data),
+            iconWrapStyle: { width: 28, height: 28, borderRadius: 9, flexShrink: 0, background: t.bg, color: t.fg, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+            valorStyle: { fontFamily: 'var(--font-numeric)', fontFeatureSettings: 'var(--num-features)', fontSize: 13, fontWeight: 600, color: h.tipo === 'saque' ? 'var(--text-primary)' : 'var(--money-in)', whiteSpace: 'nowrap' },
+            valorFormatted: sign + 'R$ ' + formatBRL(h.valor),
+          };
+        }),
+      };
+    });
+
+    return {
+      isDesktop: s.isDesktop,
+      contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
+      totalGeral: s.goals.reduce((sum, g) => sum + Number(g.saldo_atual), 0),
+      formOpen: s.formOpen,
+      toggleLabel: s.formOpen ? 'Fechar' : 'Novo cofrinho',
+      toggleIcon: s.formOpen ? 'x' : 'plus',
+      onToggleForm: () => this.setState({ formOpen: !s.formOpen }),
+      onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
+      onSettings: () => { window.location.href = 'Configurações.dc.html'; },
+      form: s.form, metaOpen: s.metaOpen,
+      onNomeChange: (v) => this.setState({ form: { ...s.form, nome: v } }),
+      onOpenMeta: () => this.setState({ metaOpen: true }),
+      onMetaChange: (v) => this.setState({ form: { ...s.form, meta: v } }),
+      canSave: !!s.form.nome,
+      onSave: () => this.save(),
+      goals,
+    };
+  }
+}
+</script>
+</body>
+</html>

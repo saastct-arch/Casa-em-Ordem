@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<script src="./app/vendor/supabase.umd.js"></script>
+<script src="./app/casa.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/base.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
+  <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
+  <style>
+    body{margin:0;}
+    a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
+    select.ceo-select{appearance:none;}
+  </style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:var(--bg-app);font-family:var(--font-body);">
+  <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Sidebar" active="entradas" on-select="{{ onNavigate }}" hint-size="248px,100%" style="position:sticky;top:0;height:100vh;"></x-import>
+  </sc-if>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
+
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Souza" title="Entradas" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;" hint-size="100%,60px"></x-import>
+        <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
+      </div>
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="primary" icon="arrow-down-left" label="Total de outubro" value="{{ totalMes }}" hint-size="100%,130px"></x-import>
+
+      <div style="position:sticky;top:0;z-index:5;padding:2px 0;background:var(--bg-app);">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="{{ toggleIcon }}" on-click="{{ onToggleForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
+      </div>
+
+      <sc-if value="{{ formOpen }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="{{ formTitle }}" hint-size="100%,420px" style="gap:18px;">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Valor" value="{{ form.valor }}" on-change="{{ onValorChange }}" size="lg" hint-size="100%,68px"></x-import>
+
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Data</label>
+            <input type="date" value="{{ form.data }}" onChange="{{ onDataChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;"></input>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Tipo</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <sc-for list="{{ tipos }}" as="t" hint-placeholder-count="3">
+                <button type="button" onClick="{{ t.onSelect }}" style="{{ t.pillStyle }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+
+          <sc-if value="{{ isResgate }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Cofrinho de origem</label>
+              <select class="ceo-select" value="{{ form.cofrinho }}" onChange="{{ onCofrinhoChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;">
+                <sc-for list="{{ cofrinhos }}" as="c" hint-placeholder-count="3">
+                  <option value="{{ c.id }}">{{ c.nome }}</option>
+                </sc-for>
+              </select>
+              <span style="font-size:12px;color:var(--text-secondary);">Preenchido automaticamente ao vir da aba Futuro</span>
+            </div>
+          </sc-if>
+
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Membro da família</label>
+            <select class="ceo-select" value="{{ form.membro }}" onChange="{{ onMembroChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;">
+              <sc-for list="{{ membros }}" as="m" hint-placeholder-count="2">
+                <option value="{{ m.id }}">{{ m.label }}</option>
+              </sc-for>
+            </select>
+          </div>
+
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSave }}" on-click="{{ onSave }}" hint-size="100%,52px">{{ saveLabel }}</x-import>
+        </x-import>
+      </sc-if>
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <sc-for list="{{ groups }}" as="group" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <span style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-secondary);">{{ group.label }}</span>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" padding="8" hint-size="100%,100px" style="gap:0;">
+              <sc-for list="{{ group.items }}" as="item" hint-placeholder-count="2">
+                <div style="{{ item.rowStyle }}">
+                  <span style="{{ item.iconWrapStyle }}">
+                    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="{{ item.icon }}" size="19" hint-size="19px,19px"></x-import>
+                  </span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                    <span style="font-size:15px;font-weight:600;color:var(--text-primary);">{{ item.tipoLabel }}</span>
+                    <span style="font-size:13px;color:var(--text-secondary);">{{ item.membroLabel }}</span>
+                    <sc-if value="{{ item.isResgate }}" hint-placeholder-val="{{ false }}">
+                      <span style="display:inline-flex;align-self:flex-start;align-items:center;height:22px;padding:0 10px;border-radius:var(--radius-pill);background:var(--gold-100);color:var(--gold-700);font-size:11.5px;font-weight:600;">Resgate: {{ item.cofrinho }}</span>
+                    </sc-if>
+                  </div>
+                  <span style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-size:15px;font-weight:600;color:var(--money-in);white-space:nowrap;">+ R$ {{ item.amountFormatted }}</span>
+                  <div style="display:flex;gap:2px;">
+                    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="pencil" label="Editar" size="32" on-click="{{ item.onEdit }}" hint-size="32px,32px"></x-import>
+                    <sc-if value="{{ !item.isResgate }}" hint-placeholder-val="{{ true }}">
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="trash-2" label="Excluir" size="32" tone="danger" on-click="{{ item.onDelete }}" hint-size="32px,32px"></x-import>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </x-import>
+          </div>
+        </sc-for>
+      </div>
+
+    </div>
+    <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+      <div style="position:sticky;bottom:0;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.BottomNav" active="entradas" on-select="{{ onNavigate }}" hint-size="100%,68px"></x-import>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+function formatBRL(n) {
+  return Math.abs(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+const MESES_LONGO = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+function dateLabel(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${String(d).padStart(2, '0')} de ${MESES_LONGO[m - 1]}`;
+}
+function hojeISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// 'salario' e 'extra' são categorias de entrada; 'resgate' é saque de
+// cofrinho, que o banco registra como entrada do tipo Resgate.
+const TIPOS = [
+  { id: 'salario', label: 'Salário', icon: 'landmark' },
+  { id: 'extra', label: 'Extra', icon: 'zap' },
+  { id: 'resgate', label: 'Saque de cofrinho', icon: 'piggy-bank' },
+];
+
+const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html' };
+
+function mesAtualPeriod() {
+  const d = new Date();
+  const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  return { mode: 'mes', month: d.getMonth(), year: d.getFullYear(), label: MESES[d.getMonth()] + ' ' + d.getFullYear() };
+}
+
+class Component extends DCLogic {
+  state = {
+    isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    period: mesAtualPeriod(),
+    entries: [], categorias: [], membros: [], cofrinhos: [],
+    formOpen: false,
+    editingId: null,
+    erro: '',
+    form: { valor: 0, data: hojeISO(), tipo: 'salario', membro: '', cofrinho: '' },
+  };
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ isDesktop: window.innerWidth >= 900 });
+    window.addEventListener('resize', this.onResize);
+    this.carregar();
+    this.pararEscuta = Casa.aoMudar(['entradas', 'cofrinhos', 'membros'], () => this.carregar());
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.onResize);
+    this.pararEscuta && this.pararEscuta();
+  }
+
+  async carregar() {
+    if (!(await Casa.auth.exigirSessao())) return;
+    try {
+      const [entries, categorias, membros, cofrinhos] = await Promise.all([
+        Casa.entradas.doPeriodo(this.state.period),
+        Casa.categorias.listarPorTipo('entrada'),
+        Casa.membros.listar(),
+        Casa.cofrinhos.listar(),
+      ]);
+      const f = this.state.form;
+      this.setState({
+        entries, categorias, membros, cofrinhos, erro: '',
+        form: {
+          ...f,
+          membro: f.membro || (membros[0] ? membros[0].id : ''),
+          cofrinho: f.cofrinho || (cofrinhos[0] ? cofrinhos[0].id : ''),
+        },
+      });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  catIdDoTipo(tipo) {
+    const c = this.state.categorias.find(c => c.slug === tipo);
+    return c ? c.id : null;
+  }
+  tipoDaEntrada(e) {
+    if (e.tipo === 'resgate') return 'resgate';
+    const slug = e.categorias && e.categorias.slug;
+    return slug === 'salario' || slug === 'extra' ? slug : 'extra';
+  }
+
+  toggleForm() {
+    const next = !this.state.formOpen;
+    this.setState({ formOpen: next, editingId: next ? this.state.editingId : null });
+  }
+  setForm(patch) { this.setState({ form: { ...this.state.form, ...patch } }); }
+
+  async save() {
+    const f = this.state.form;
+    if (!f.valor || f.valor <= 0) return;
+    try {
+      if (f.tipo === 'resgate') {
+        if (!f.cofrinho) throw new Error('Escolha um cofrinho.');
+        if (this.state.editingId) {
+          // Já é um resgate existente: só ajusta a linha; a trigger
+          // recalcula o saldo do cofrinho.
+          await Casa.entradas.atualizar(this.state.editingId, {
+            valor: f.valor, data: f.data, membro_id: f.membro || null,
+            tipo: 'resgate', cofrinho_id: f.cofrinho, categoria_id: null,
+          });
+        } else {
+          // Saque novo: o banco valida o saldo e cria a entrada Resgate.
+          await Casa.cofrinhos.sacar(f.cofrinho, f.valor, { data: f.data, membroId: f.membro || null });
+        }
+      } else {
+        const dados = {
+          descricao: TIPOS.find(t => t.id === f.tipo).label,
+          valor: f.valor, data: f.data,
+          categoria_id: this.catIdDoTipo(f.tipo),
+          membro_id: f.membro || null,
+          tipo: 'normal', cofrinho_id: null,
+        };
+        if (this.state.editingId) await Casa.entradas.atualizar(this.state.editingId, dados);
+        else await Casa.entradas.criar(dados);
+      }
+
+      this.setState({
+        formOpen: false, editingId: null, erro: '',
+        form: { valor: 0, data: f.data, tipo: 'salario', membro: f.membro, cofrinho: f.cofrinho },
+      });
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  edit(entry) {
+    this.setState({
+      editingId: entry.id, formOpen: true,
+      form: {
+        valor: Number(entry.valor), data: entry.data,
+        tipo: this.tipoDaEntrada(entry),
+        membro: entry.membro_id || '',
+        cofrinho: entry.cofrinho_id || (this.state.cofrinhos[0] ? this.state.cofrinhos[0].id : ''),
+      },
+    });
+  }
+
+  async remove(entry) {
+    try {
+      await Casa.entradas.excluir(entry.id);
+      await this.carregar();
+    } catch (e) { this.setState({ erro: e.message }); }
+  }
+
+  renderVals() {
+    const { entries, form, formOpen } = this.state;
+    const totalMes = entries.reduce((s, e) => s + Number(e.valor), 0);
+
+    const byDate = {};
+    entries.forEach(e => { (byDate[e.data] = byDate[e.data] || []).push(e); });
+    const groups = Object.keys(byDate).sort((a, b) => b.localeCompare(a)).map(d => ({
+      label: dateLabel(d),
+      items: byDate[d].map(e => {
+        const tipoId = this.tipoDaEntrada(e);
+        const t = TIPOS.find(x => x.id === tipoId);
+        const isResgate = tipoId === 'resgate';
+        return {
+          icon: t.icon,
+          tipoLabel: t.label,
+          membroLabel: (e.membros && e.membros.nome) || '—',
+          isResgate,
+          cofrinho: (e.cofrinhos && e.cofrinhos.nome) || '',
+          amountFormatted: formatBRL(Number(e.valor)),
+          onEdit: () => this.edit(e),
+          onDelete: () => this.remove(e),
+          rowStyle: { display: 'flex', alignItems: 'center', gap: 14, padding: '14px 10px', borderBottom: '1px solid var(--border-default)' },
+          iconWrapStyle: {
+            width: 40, height: 40, flexShrink: 0, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: isResgate ? 'var(--gold-100)' : 'var(--color-primary-soft)', color: isResgate ? 'var(--gold-700)' : 'var(--color-primary)',
+          },
+        };
+      }),
+    }));
+    if (groups.length) {
+      const lastGroupItems = groups[groups.length - 1].items;
+      if (lastGroupItems.length) lastGroupItems[lastGroupItems.length - 1].rowStyle = { ...lastGroupItems[lastGroupItems.length - 1].rowStyle, borderBottom: 'none' };
+    }
+
+    const tipos = TIPOS.map(t => {
+      const active = form.tipo === t.id;
+      return {
+        label: t.label,
+        onSelect: () => this.setForm({ tipo: t.id }),
+        pillStyle: {
+          height: 36, padding: '0 16px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer',
+          fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
+          background: active ? 'var(--color-primary-soft)' : 'var(--cream-200)',
+          color: active ? 'var(--emerald-800)' : 'var(--text-secondary)',
+        },
+      };
+    });
+
+    return {
+      isDesktop: this.state.isDesktop,
+      contentPadding: this.state.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
+      period: this.state.period,
+      onPeriodChange: (next) => this.setState({ period: next }, () => this.carregar()),
+      onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
+      onSettings: () => { window.location.href = 'Configurações.dc.html'; },
+      totalMes,
+      formOpen,
+      formTitle: this.state.editingId ? 'Editar entrada' : 'Nova entrada',
+      saveLabel: this.state.editingId ? 'Salvar alterações' : 'Salvar entrada',
+      toggleLabel: formOpen ? 'Fechar' : 'Nova entrada',
+      toggleIcon: formOpen ? 'x' : 'plus',
+      onToggleForm: () => this.toggleForm(),
+      form,
+      isResgate: form.tipo === 'resgate',
+      tipos,
+      membros: this.state.membros.map(m => ({ id: m.id, label: m.nome })),
+      cofrinhos: this.state.cofrinhos,
+      canSave: form.valor > 0,
+      onValorChange: (v) => this.setForm({ valor: v }),
+      onDataChange: (e) => this.setForm({ data: e.target.value }),
+      onCofrinhoChange: (e) => this.setForm({ cofrinho: e.target.value }),
+      onMembroChange: (e) => this.setForm({ membro: e.target.value }),
+      onSave: () => this.save(),
+      groups,
+    };
+  }
+}
+</script>
+</body>
+</html>

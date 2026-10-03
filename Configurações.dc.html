@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<script src="./app/vendor/supabase.umd.js"></script>
+<script src="./app/casa.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/base.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
+  <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
+  <style>
+    body{margin:0;}
+    a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
+  </style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:var(--bg-app);font-family:var(--font-body);">
+  <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Sidebar" active="config" on-select="{{ onNavigate }}" on-settings="{{ onStayHere }}" hint-size="248px,100%" style="position:sticky;top:0;height:100vh;"></x-import>
+  </sc-if>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:20px;">
+
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <span style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-secondary);">Família Souza</span>
+        <h1 style="margin:0;font-family:var(--font-display);font-size:{{ titleSize }};font-weight:800;letter-spacing:-0.025em;">Configurações</h1>
+      </div>
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Membros da família" subtitle="Quem participa do controle financeiro" hint-size="100%,320px" style="gap:16px;">
+        <div style="display:flex;flex-direction:column;">
+          <sc-for list="{{ membros }}" as="m" hint-placeholder-count="2">
+            <div style="{{ m.rowStyle }}">
+              <sc-if value="{{ m.editing }}" hint-placeholder-val="{{ false }}">
+                <span style="{{ m.avatarStyle }}">{{ m.initial }}</span>
+                <input type="text" value="{{ m.editName }}" onChange="{{ m.onEditNameChange }}" style="flex:1;min-width:0;height:36px;padding:0 10px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:14px;color:var(--text-primary);outline:none;"></input>
+              </sc-if>
+              <sc-if value="{{ !m.editing }}" hint-placeholder-val="{{ true }}">
+                <span style="{{ m.avatarStyle }}">{{ m.initial }}</span>
+                <span style="flex:1;min-width:0;font-size:15px;font-weight:600;color:var(--text-primary);">{{ m.nome }}</span>
+              </sc-if>
+
+              <sc-if value="{{ m.confirmingRemove }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size:12px;color:var(--text-secondary);max-width:180px;">Remover? Lançamentos antigos serão mantidos.</span>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="danger" size="sm" on-click="{{ m.onConfirmRemove }}" hint-size="auto,32px">Remover</x-import>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ m.onCancelRemove }}" hint-size="auto,32px">Cancelar</x-import>
+              </sc-if>
+              <sc-if value="{{ !m.confirmingRemove && !m.editing }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;gap:2px;">
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="pencil" label="Editar nome" size="32" on-click="{{ m.onStartEdit }}" hint-size="32px,32px"></x-import>
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="trash-2" label="Remover" size="32" tone="danger" on-click="{{ m.onRequestRemove }}" hint-size="32px,32px"></x-import>
+                </div>
+              </sc-if>
+              <sc-if value="{{ m.editing }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;gap:6px;">
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="sm" on-click="{{ m.onSaveEdit }}" hint-size="auto,32px">Salvar</x-import>
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ m.onCancelEdit }}" hint-size="auto,32px">Cancelar</x-import>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ !addOpen }}" hint-placeholder-val="{{ true }}">
+          <button type="button" onClick="{{ onOpenAdd }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:var(--radius-pill);background:transparent;border:1px dashed var(--border-strong);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;">+ Adicionar membro</button>
+        </sc-if>
+
+        <sc-if value="{{ addOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:14px;padding-top:4px;border-top:1px solid var(--border-default);">
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.TextInput" label="Nome" value="{{ newForm.nome }}" on-change="{{ onNewNomeChange }}" placeholder="Ex.: Sofia" hint-size="100%,68px"></x-import>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Cor do avatar</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <sc-for list="{{ avatarSwatches }}" as="sw" hint-placeholder-count="6">
+                  <button type="button" onClick="{{ sw.onSelect }}" style="{{ sw.style }}"></button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="md" full-width="{{ true }}" disabled="{{ !newForm.nome }}" on-click="{{ onAddMembro }}" hint-size="auto,44px">Adicionar</x-import>
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="md" full-width="{{ true }}" on-click="{{ onCloseAdd }}" hint-size="auto,44px">Cancelar</x-import>
+            </div>
+          </div>
+        </sc-if>
+      </x-import>
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Categorias" subtitle="Em breve" hint-size="100%,100px" style="opacity:0.55;">
+        <span style="font-size:13px;color:var(--text-secondary);">Gestão de categorias personalizadas chega em uma próxima atualização.</span>
+      </x-import>
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Segurança" subtitle="Em breve" hint-size="100%,100px" style="opacity:0.55;">
+        <span style="font-size:13px;color:var(--text-secondary);">Troca de senha e outras opções de segurança chegam em breve.</span>
+      </x-import>
+
+    </div>
+    <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+      <div style="position:sticky;bottom:0;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.BottomNav" active="config" on-select="{{ onNavigate }}" hint-size="100%,68px"></x-import>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html' };
+const AVATAR_SWATCHES = ['#0E6E5B', '#C8963E', '#4472A8', '#8B5FA0', '#6B7A8F', '#C1502E'];
+
+class Component extends DCLogic {
+  state = {
+    isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    membros: [],
+    editingId: null, editName: '',
+    confirmRemoveId: null,
+    addOpen: false,
+    newForm: { nome: '', cor: AVATAR_SWATCHES[0] },
+    erro: '',
+  };
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ isDesktop: window.innerWidth >= 900 });
+    window.addEventListener('resize', this.onResize);
+    this.carregar();
+    // Outra pessoa da família mexeu? A lista se atualiza sozinha.
+    this.pararEscuta = Casa.aoMudar(['membros'], () => this.carregar());
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.onResize);
+    this.pararEscuta && this.pararEscuta();
+  }
+
+  async carregar() {
+    if (!(await Casa.auth.exigirSessao())) return;
+    try {
+      this.setState({ membros: await Casa.membros.listar(), erro: '' });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  startEdit(m) { this.setState({ editingId: m.id, editName: m.nome, confirmRemoveId: null }); }
+  cancelEdit() { this.setState({ editingId: null, editName: '' }); }
+
+  async saveEdit(m) {
+    const nome = this.state.editName;
+    if (!nome) return;
+    try {
+      await Casa.membros.atualizar(m.id, { nome });
+      this.setState({ editingId: null, editName: '' });
+      await this.carregar();
+    } catch (e) { this.setState({ erro: e.message }); }
+  }
+
+  requestRemove(m) { this.setState({ confirmRemoveId: m.id }); }
+  cancelRemove() { this.setState({ confirmRemoveId: null }); }
+
+  async confirmRemove(m) {
+    try {
+      await Casa.membros.excluir(m.id);
+      this.setState({ confirmRemoveId: null });
+      await this.carregar();
+    } catch (e) { this.setState({ erro: e.message, confirmRemoveId: null }); }
+  }
+
+  async addMembro() {
+    const f = this.state.newForm;
+    if (!f.nome) return;
+    try {
+      await Casa.membros.criar({ nome: f.nome, cor: f.cor });
+      this.setState({ addOpen: false, newForm: { nome: '', cor: AVATAR_SWATCHES[0] } });
+      await this.carregar();
+    } catch (e) { this.setState({ erro: e.message }); }
+  }
+
+  renderVals() {
+    const s = this.state;
+    const membros = s.membros.map(m => {
+      const editing = s.editingId === m.id;
+      const confirmingRemove = s.confirmRemoveId === m.id;
+      const cor = m.cor || AVATAR_SWATCHES[0];
+      return {
+        nome: m.nome, initial: (m.nome || '?').charAt(0).toUpperCase(),
+        editing, editName: editing ? s.editName : m.nome,
+        confirmingRemove,
+        avatarStyle: { width: 40, height: 40, flexShrink: 0, borderRadius: '50%', background: cor, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15 },
+        rowStyle: { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 4px', borderBottom: '1px solid var(--border-default)' },
+        onEditNameChange: (e) => this.setState({ editName: e.target.value }),
+        onStartEdit: () => this.startEdit(m),
+        onSaveEdit: () => this.saveEdit(m),
+        onCancelEdit: () => this.cancelEdit(),
+        onRequestRemove: () => this.requestRemove(m),
+        onConfirmRemove: () => this.confirmRemove(m),
+        onCancelRemove: () => this.cancelRemove(),
+      };
+    });
+
+    const avatarSwatches = AVATAR_SWATCHES.map(sw => ({
+      onSelect: () => this.setState({ newForm: { ...s.newForm, cor: sw } }),
+      style: { width: 30, height: 30, borderRadius: '50%', background: sw, border: s.newForm.cor === sw ? '3px solid var(--text-primary)' : '1px solid var(--border-default)', cursor: 'pointer' },
+    }));
+
+    return {
+      isDesktop: s.isDesktop,
+      contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
+      titleSize: s.isDesktop ? '30px' : '22px',
+      onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
+      onStayHere: () => {},
+      membros,
+      addOpen: s.addOpen,
+      onOpenAdd: () => this.setState({ addOpen: true }),
+      onCloseAdd: () => this.setState({ addOpen: false, newForm: { nome: '', cor: AVATAR_SWATCHES[0] } }),
+      newForm: s.newForm,
+      onNewNomeChange: (v) => this.setState({ newForm: { ...s.newForm, nome: v } }),
+      avatarSwatches,
+      onAddMembro: () => this.addMembro(),
+    };
+  }
+}
+</script>
+</body>
+</html>

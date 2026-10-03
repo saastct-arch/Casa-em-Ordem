@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<script src="./app/vendor/supabase.umd.js"></script>
+<script src="./app/casa.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/base.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
+  <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
+  <style>
+    body{margin:0;}
+    a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
+    select.ceo-select{appearance:none;}
+  </style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:var(--bg-app);font-family:var(--font-body);">
+  <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Sidebar" active="saidas" on-select="{{ onNavigate }}" hint-size="248px,100%" style="position:sticky;top:0;height:100vh;"></x-import>
+  </sc-if>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
+
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Souza" title="Saídas" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;" hint-size="100%,60px"></x-import>
+        <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
+      </div>
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="primary" icon="arrow-up-right" label="Total do mês" value="{{ totalMes }}" hint-size="100%,130px"></x-import>
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="{{ formTitle }}" hint-size="100%,560px" style="gap:18px;" data-comment-anchor="9be809db9e-section">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Valor" value="{{ form.valor }}" on-change="{{ onValorChange }}" size="lg" hint-size="100%,68px"></x-import>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Data</label>
+          <input type="date" value="{{ form.data }}" onChange="{{ onDataChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;"></input>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Categoria</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <sc-for list="{{ allCategories }}" as="cat" hint-placeholder-count="6">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.CategoryChip" category="{{ cat.chipKey }}" label="{{ cat.label }}" active="{{ cat.isSelected }}" on-click="{{ cat.onSelect }}" hint-size="auto,32px"></x-import>
+            </sc-for>
+            <sc-if value="{{ !newCatOpen }}" hint-placeholder-val="{{ true }}">
+              <button type="button" onClick="{{ onOpenNewCat }}" style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px;border-radius:var(--radius-pill);background:transparent;border:1px dashed var(--border-strong);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;">+ Nova categoria</button>
+            </sc-if>
+          </div>
+          <sc-if value="{{ newCatOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+              <input type="text" placeholder="Nome da categoria" value="{{ newCatName }}" onChange="{{ onNewCatNameChange }}" style="flex:1;min-width:0;height:var(--control-h-sm);padding:0 12px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:14px;color:var(--text-primary);outline:none;"></input>
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="soft" size="sm" disabled="{{ !newCatName }}" on-click="{{ onAddNewCat }}" hint-size="auto,36px">Adicionar</x-import>
+            </div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ showDividaAviso }}" hint-placeholder-val="{{ false }}">
+          <span style="display:block;padding:10px 14px;border-radius:var(--radius-control);background:var(--color-alert-soft);color:var(--color-alert);font-size:13px;font-weight:500;">Este valor será descontado do saldo da dívida {{ dividaNome }}</span>
+        </sc-if>
+        <sc-if value="{{ showFuturoAviso }}" hint-placeholder-val="{{ false }}">
+          <span style="display:block;padding:10px 14px;border-radius:var(--radius-control);background:var(--color-accent-soft);color:var(--gold-700);font-size:13px;font-weight:500;">Este valor será somado ao cofrinho {{ cofrinhoNome }}</span>
+        </sc-if>
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Forma de pagamento</label>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+            <sc-for list="{{ formas }}" as="f" hint-placeholder-count="3">
+              <button type="button" onClick="{{ f.onSelect }}" style="{{ f.style }}">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="{{ f.icon }}" size="17" hint-size="17px,17px"></x-import>
+                {{ f.label }}
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-if value="{{ isCredito }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Cartão</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <sc-for list="{{ cartoes }}" as="c" hint-placeholder-count="2">
+                  <button type="button" onClick="{{ c.onSelect }}" style="{{ c.style }}">
+                    <span style="{{ c.swatchStyle }}"></span>
+                    {{ c.label }}
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Parcelamento</label>
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+                <sc-for list="{{ parceladoOptions }}" as="p" hint-placeholder-count="2">
+                  <button type="button" onClick="{{ p.onSelect }}" style="{{ p.style }}">{{ p.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+
+            <sc-if value="{{ isParcelado }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Número de parcelas</label>
+                  <input type="number" min="2" max="24" value="{{ form.parcelas }}" onChange="{{ onParcelasChange }}" onBlur="{{ onParcelasBlur }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-numeric);font-size:15px;color:var(--text-primary);outline:none;max-width:140px;"></input>
+                </div>
+                <span style="font-size:13px;color:var(--text-secondary);">Valor de cada parcela: <strong style="color:var(--text-primary);font-family:var(--font-numeric);">R$ {{ parcelaValorFormatted }}</strong></span>
+                <span style="display:block;padding:10px 14px;border-radius:var(--radius-control);background:var(--color-accent-soft);color:var(--gold-700);font-size:13px;font-weight:500;">Este gasto vai aparecer em {{ form.parcelas }} faturas futuras deste cartão</span>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Membro da família</label>
+          <div style="display:flex;gap:10px;">
+            <sc-for list="{{ membros }}" as="m" hint-placeholder-count="2">
+              <button type="button" onClick="{{ m.onSelect }}" title="{{ m.label }}" style="{{ m.style }}">{{ m.initial }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Observações (opcional)</label>
+          <textarea value="{{ form.observacao }}" onChange="{{ onObservacaoChange }}" placeholder="Algum detalhe sobre este gasto?" rows="2" style="padding:12px 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:14px;color:var(--text-primary);outline:none;resize:vertical;"></textarea>
+        </div>
+
+        <sc-if value="{{ !confirmingEditScope }}" hint-placeholder-val="{{ true }}">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSave }}" on-click="{{ onSave }}" hint-size="100%,52px">{{ saveLabel }}</x-import>
+        </sc-if>
+        <sc-if value="{{ confirmingEditScope }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;padding:4px 0;">
+            <span style="font-size:13px;color:var(--text-secondary);margin-right:auto;">Salvar em qual parcela?</span>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="sm" on-click="{{ onSaveOnlyThis }}" hint-size="auto,32px">Só esta</x-import>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="sm" on-click="{{ onSaveAllFuture }}" hint-size="auto,32px">Esta e futuras</x-import>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ onCancelEditScope }}" hint-size="auto,32px">Cancelar</x-import>
+          </div>
+        </sc-if>
+      </x-import>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <span style="font-size:13px;font-weight:600;color:var(--text-primary);">Filtros</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <select class="ceo-select" value="{{ filtroCategoria }}" onChange="{{ onFiltroCategoria }}" style="height:var(--control-h-sm);padding:0 12px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:13px;color:var(--text-primary);outline:none;">
+            <option value="todas">Categoria: todas</option>
+            <sc-for list="{{ allCategories }}" as="cat" hint-placeholder-count="6">
+              <option value="{{ cat.id }}">{{ cat.label }}</option>
+            </sc-for>
+          </select>
+          <select class="ceo-select" value="{{ filtroMembro }}" onChange="{{ onFiltroMembro }}" style="height:var(--control-h-sm);padding:0 12px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:13px;color:var(--text-primary);outline:none;">
+            <option value="todos">Membro: todos</option>
+            <sc-for list="{{ membros }}" as="m" hint-placeholder-count="2">
+              <option value="{{ m.id }}">{{ m.label }}</option>
+            </sc-for>
+          </select>
+          <select class="ceo-select" value="{{ filtroForma }}" onChange="{{ onFiltroForma }}" style="height:var(--control-h-sm);padding:0 12px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:13px;color:var(--text-primary);outline:none;">
+            <option value="todas">Pagamento: todas</option>
+            <sc-for list="{{ formas }}" as="f" hint-placeholder-count="3">
+              <option value="{{ f.id }}">{{ f.label }}</option>
+            </sc-for>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <sc-for list="{{ groups }}" as="group" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <span style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-secondary);">{{ group.label }}</span>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" padding="8" hint-size="100%,100px" style="gap:0;">
+              <sc-for list="{{ group.items }}" as="item" hint-placeholder-count="2">
+                <div style="{{ item.rowStyle }}">
+                  <sc-if value="{{ item.confirmingDelete }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;padding:4px 0;">
+                      <span style="font-size:13px;color:var(--text-secondary);margin-right:auto;">Excluir esta parcela?</span>
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="danger" size="sm" on-click="{{ item.onDeleteOnlyThis }}" hint-size="auto,32px">Só esta</x-import>
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="danger" size="sm" on-click="{{ item.onDeleteAllFuture }}" hint-size="auto,32px">Esta e futuras</x-import>
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ item.onCancelDelete }}" hint-size="auto,32px">Cancelar</x-import>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ !item.confirmingDelete }}" hint-placeholder-val="{{ true }}">
+                    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.CategoryChip" category="{{ item.category }}" label="{{ item.categoryLabel }}" size="sm" hint-size="auto,26px"></x-import>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                      <span style="font-size:15px;font-weight:600;color:var(--text-primary);">R$ {{ item.amountFormatted }}</span>
+                      <sc-if value="{{ item.isParcelado }}" hint-placeholder-val="{{ false }}">
+                        <span style="display:inline-flex;align-self:flex-start;align-items:center;height:20px;padding:0 8px;border-radius:var(--radius-pill);background:var(--cream-200);color:var(--text-secondary);font-size:11px;font-weight:600;">{{ item.parcelaTag }}</span>
+                      </sc-if>
+                      <sc-if value="{{ item.observacao }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-size:12px;color:var(--text-secondary);font-style:italic;">{{ item.observacao }}</span>
+                      </sc-if>
+                    </div>
+                    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="{{ item.formaIcon }}" size="17" color="var(--text-muted)" hint-size="17px,17px"></x-import>
+                    <span style="{{ item.avatarStyle }}">{{ item.membroInitial }}</span>
+                    <div style="display:flex;gap:2px;">
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="pencil" label="Editar" size="32" on-click="{{ item.onEdit }}" hint-size="32px,32px"></x-import>
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="trash-2" label="Excluir" size="32" tone="danger" on-click="{{ item.onDelete }}" hint-size="32px,32px"></x-import>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </x-import>
+          </div>
+        </sc-for>
+      </div>
+
+    </div>
+    <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+      <div style="position:sticky;bottom:0;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.BottomNav" active="saidas" on-select="{{ onNavigate }}" hint-size="100%,68px"></x-import>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+function formatBRL(n) {
+  return Math.abs(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+const MESES_LONGO = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function dateLabel(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${String(d).padStart(2, '0')} de ${MESES_LONGO[m - 1]}`;
+}
+function hojeISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function mesAtualPeriod() {
+  const d = new Date();
+  return { mode: 'mes', month: d.getMonth(), year: d.getFullYear(), label: MESES[d.getMonth()] + ' ' + d.getFullYear() };
+}
+
+const FORMAS = [
+  { id: 'pix', label: 'Pix', icon: 'zap' },
+  { id: 'debito', label: 'Débito', icon: 'wallet' },
+  { id: 'credito', label: 'Cartão de crédito', icon: 'receipt-text' },
+];
+const CORES_CARTAO = ['var(--cat-pessoal)', 'var(--cat-carro)', 'var(--cat-casa)', 'var(--cat-outros)', 'var(--cat-divida)', 'var(--cat-futuro)'];
+const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html' };
+
+class Component extends DCLogic {
+  state = {
+    isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    period: mesAtualPeriod(),
+    entries: [], categorias: [], membros: [], cartoes: [], dividas: [], cofrinhos: [],
+    newCatOpen: false, newCatName: '',
+    filtroCategoria: 'todas', filtroMembro: 'todos', filtroForma: 'todas',
+    editingId: null, editingParcela: null,
+    confirmDeleteId: null,
+    confirmingEditScope: false,
+    erro: '',
+    form: { valor: 0, data: hojeISO(), category: '', forma: 'pix', cartao: '', parcelado: false, parcelas: '2', membro: '', observacao: '' },
+  };
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ isDesktop: window.innerWidth >= 900 });
+    window.addEventListener('resize', this.onResize);
+    this.carregar();
+    this.pararEscuta = Casa.aoMudar(['saidas', 'categorias', 'cartoes', 'membros'], () => this.carregar());
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.onResize);
+    this.pararEscuta && this.pararEscuta();
+  }
+
+  async carregar() {
+    if (!(await Casa.auth.exigirSessao())) return;
+    try {
+      const [entries, categorias, membros, cartoes, dividas, cofrinhos] = await Promise.all([
+        Casa.saidas.doPeriodo(this.state.period),
+        Casa.categorias.listarPorTipo('saida'),
+        Casa.membros.listar(),
+        Casa.cartoes.listar(),
+        Casa.dividas.listar(),
+        Casa.cofrinhos.listar(),
+      ]);
+      const f = this.state.form;
+      this.setState({
+        entries, categorias, membros, cartoes, dividas, cofrinhos, erro: '',
+        form: {
+          ...f,
+          category: f.category || (categorias[0] ? categorias[0].id : ''),
+          cartao: f.cartao || (cartoes[0] ? cartoes[0].id : ''),
+          membro: f.membro || (membros[0] ? membros[0].id : ''),
+        },
+      });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  setForm(patch) { this.setState({ form: { ...this.state.form, ...patch } }); }
+
+  resetForm() {
+    const s = this.state;
+    this.setState({
+      editingId: null, editingParcela: null, confirmingEditScope: false,
+      form: {
+        valor: 0, data: s.form.data,
+        category: s.categorias[0] ? s.categorias[0].id : '',
+        forma: 'pix',
+        cartao: s.cartoes[0] ? s.cartoes[0].id : '',
+        parcelado: false, parcelas: '2',
+        membro: s.membros[0] ? s.membros[0].id : '',
+        observacao: '',
+      },
+    });
+  }
+
+  catSelecionada() {
+    return this.state.categorias.find(c => c.id === this.state.form.category);
+  }
+
+  /** Salvar: parcelada existente pergunta o escopo antes de gravar. */
+  onSave() {
+    const par = this.state.editingParcela;
+    if (par) {
+      // Mudar o número de parcelas refaz a compra inteira, então a
+      // pergunta "só esta / esta e futuras" não se aplica.
+      if (Number(this.state.form.parcelas) !== par.parcela_total) {
+        this.gravar('recriar');
+        return;
+      }
+      this.setState({ confirmingEditScope: true });
+      return;
+    }
+    this.gravar(null);
+  }
+
+  async gravar(escopo) {
+    const f = this.state.form;
+    if (!f.valor || f.valor <= 0) return;
+    const parcelasNum = Number(f.parcelas) || 0;
+
+    try {
+      const par = this.state.editingParcela;
+      if (par && escopo === 'recriar') {
+        // Troca do número de parcelas: apaga o grupo e gera de novo, a
+        // partir da data original da compra, para as parcelas caírem nas
+        // faturas certas.
+        if (!f.cartao) throw new Error('Escolha um cartão.');
+        await Casa.saidas.excluirParcelas(par.parcela_grupo, 1, 'futuras');
+        await Casa.saidas.criarParcelada({
+          descricao: (this.catSelecionada() || {}).nome || 'Compra',
+          valorTotal: f.valor,
+          cartaoId: f.cartao,
+          numParcelas: parcelasNum,
+          dataCompra: par.data_compra || f.data,
+          categoriaId: f.category || null,
+          membroId: f.membro || null,
+          observacao: f.observacao || null,
+        });
+      } else if (par && escopo) {
+        // Edição de parcela: o valor do formulário é o total da compra,
+        // então cada parcela afetada recebe total / nº de parcelas.
+        const porParcela = par.parcela_total > 0 ? f.valor / par.parcela_total : f.valor;
+        await Casa.saidas.editarParcelas(par.parcela_grupo, par.parcela_num, escopo, {
+          valor: porParcela,
+          categoriaId: f.category || null,
+          membroId: f.membro || null,
+        });
+      } else if (!this.state.editingId && f.forma === 'credito' && f.parcelado) {
+        if (!f.cartao) throw new Error('Escolha um cartão.');
+        await Casa.saidas.criarParcelada({
+          descricao: (this.catSelecionada() || {}).nome || 'Compra',
+          valorTotal: f.valor,
+          cartaoId: f.cartao,
+          numParcelas: parcelasNum,
+          dataCompra: f.data,
+          categoriaId: f.category || null,
+          membroId: f.membro || null,
+          observacao: f.observacao || null,
+        });
+      } else {
+        const dados = {
+          descricao: (this.catSelecionada() || {}).nome || 'Gasto',
+          valor: f.valor, data: f.data,
+          categoria_id: f.category || null,
+          membro_id: f.membro || null,
+          forma_pagamento: f.forma,
+          cartao_id: f.forma === 'credito' ? (f.cartao || null) : null,
+          observacao: f.observacao || null,
+        };
+        if (this.state.editingId) await Casa.saidas.atualizar(this.state.editingId, dados);
+        else await Casa.saidas.criar(dados);
+      }
+
+      this.resetForm();
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message, confirmingEditScope: false });
+    }
+  }
+
+  edit(entry) {
+    const parcelada = !!entry.parcela_grupo;
+    this.setState({
+      editingId: entry.id,
+      editingParcela: parcelada ? entry : null,
+      confirmDeleteId: null, confirmingEditScope: false,
+      form: {
+        // numa parcelada o formulário mostra o total da compra, como no protótipo
+        valor: parcelada ? Number(entry.valor) * entry.parcela_total : Number(entry.valor),
+        data: entry.data,
+        category: entry.categoria_id || '',
+        forma: entry.forma_pagamento,
+        cartao: entry.cartao_id || (this.state.cartoes[0] ? this.state.cartoes[0].id : ''),
+        parcelado: parcelada,
+        parcelas: String(entry.parcela_total || 2),
+        membro: entry.membro_id || '',
+        observacao: entry.observacao || '',
+      },
+    });
+  }
+
+  requestDelete(entry) {
+    if (entry.parcela_grupo) this.setState({ confirmDeleteId: entry.id });
+    else this.remover(entry, null);
+  }
+
+  async remover(entry, escopo) {
+    try {
+      if (escopo && entry.parcela_grupo) {
+        await Casa.saidas.excluirParcelas(entry.parcela_grupo, entry.parcela_num, escopo);
+      } else {
+        await Casa.saidas.excluir(entry.id);
+      }
+      this.setState({ confirmDeleteId: null });
+      if (this.state.editingId === entry.id) this.resetForm();
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message, confirmDeleteId: null });
+    }
+  }
+
+  async addNewCat() {
+    const nome = this.state.newCatName;
+    if (!nome) return;
+    try {
+      const cat = await Casa.categorias.garantir(nome, 'saida');
+      this.setState({ newCatOpen: false, newCatName: '' });
+      await this.carregar();
+      this.setForm({ category: cat.id });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  renderVals() {
+    const s = this.state;
+    const f = s.form;
+
+    const allCategories = s.categorias.map(c => ({
+      id: c.id,
+      chipKey: Casa.categorias.chipKey(c),
+      label: c.nome,
+      isSelected: f.category === c.id,
+      onSelect: () => this.setForm({ category: c.id }),
+    }));
+
+    const selectedCat = this.catSelecionada();
+    const divida = selectedCat && selectedCat.divida_id
+      ? s.dividas.find(d => d.id === selectedCat.divida_id) : null;
+    const cofrinho = selectedCat && selectedCat.cofrinho_id
+      ? s.cofrinhos.find(c => c.id === selectedCat.cofrinho_id) : null;
+
+    const formas = FORMAS.map(fo => ({
+      ...fo, isSelected: f.forma === fo.id,
+      onSelect: () => this.setForm({ forma: fo.id }),
+      style: {
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 44, borderRadius: 'var(--radius-control)',
+        border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
+        background: f.forma === fo.id ? 'var(--color-primary-soft)' : 'var(--cream-200)',
+        color: f.forma === fo.id ? 'var(--emerald-800)' : 'var(--text-secondary)',
+      },
+    }));
+
+    const cartoes = s.cartoes.map((c, i) => ({
+      id: c.id, label: c.nome,
+      onSelect: () => this.setForm({ cartao: c.id }),
+      swatchStyle: { width: 12, height: 12, borderRadius: '50%', background: c.cor || CORES_CARTAO[i % CORES_CARTAO.length], display: 'inline-block' },
+      style: {
+        display: 'inline-flex', alignItems: 'center', gap: 8, height: 36, padding: '0 14px', borderRadius: 'var(--radius-pill)',
+        border: f.cartao === c.id ? '1px solid var(--color-primary)' : '1px solid var(--border-strong)', cursor: 'pointer',
+        background: f.cartao === c.id ? 'var(--color-primary-soft)' : 'var(--surface-card)',
+        color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
+      },
+    }));
+
+    const parceladoOptions = [
+      { id: false, label: 'À vista' },
+      { id: true, label: 'Parcelado' },
+    ].map(p => ({
+      label: p.label, onSelect: () => this.setForm({ parcelado: p.id }),
+      style: {
+        height: 36, borderRadius: 'var(--radius-control)', border: 'none', cursor: 'pointer',
+        fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
+        background: f.parcelado === p.id ? 'var(--color-primary-soft)' : 'var(--cream-200)',
+        color: f.parcelado === p.id ? 'var(--emerald-800)' : 'var(--text-secondary)',
+      },
+    }));
+
+    const membros = s.membros.map(m => ({
+      id: m.id, label: m.nome, initial: (m.nome || '?').charAt(0).toUpperCase(),
+      onSelect: () => this.setForm({ membro: m.id }),
+      style: {
+        width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
+        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15,
+        background: f.membro === m.id ? 'var(--color-primary)' : 'var(--cream-200)',
+        color: f.membro === m.id ? '#fff' : 'var(--text-secondary)',
+      },
+    }));
+
+    const byDate = {};
+    s.entries.forEach(e => { (byDate[e.data] = byDate[e.data] || []).push(e); });
+    const groups = Object.keys(byDate).sort((a, b) => b.localeCompare(a)).map(d => ({
+      label: dateLabel(d),
+      items: byDate[d]
+        .filter(e => s.filtroCategoria === 'todas' || e.categoria_id === s.filtroCategoria)
+        .filter(e => s.filtroMembro === 'todos' || e.membro_id === s.filtroMembro)
+        .filter(e => s.filtroForma === 'todas' || e.forma_pagamento === s.filtroForma)
+        .map((e, idx, arr) => {
+          const forma = FORMAS.find(fo => fo.id === e.forma_pagamento);
+          const nomeMembro = (e.membros && e.membros.nome) || '';
+          return {
+            category: Casa.categorias.chipKey(e.categorias),
+            categoryLabel: (e.categorias && e.categorias.nome) || 'Sem categoria',
+            amountFormatted: formatBRL(Number(e.valor)),
+            isParcelado: !!e.parcela_grupo,
+            parcelaTag: e.parcela_grupo ? `${e.parcela_num}/${e.parcela_total}` : '',
+            formaIcon: forma ? forma.icon : 'wallet',
+            membroInitial: nomeMembro ? nomeMembro.charAt(0).toUpperCase() : '?',
+            observacao: e.observacao || '',
+            avatarStyle: { width: 28, height: 28, borderRadius: '50%', background: 'var(--cream-200)', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12 },
+            confirmingDelete: s.confirmDeleteId === e.id,
+            onEdit: () => this.edit(e),
+            onDelete: () => this.requestDelete(e),
+            onDeleteOnlyThis: () => this.remover(e, 'atual'),
+            onDeleteAllFuture: () => this.remover(e, 'futuras'),
+            onCancelDelete: () => this.setState({ confirmDeleteId: null }),
+            rowStyle: {
+              display: 'flex', alignItems: 'center', gap: 12, padding: '14px 10px',
+              borderBottom: idx < arr.length - 1 ? '1px solid var(--border-default)' : 'none',
+            },
+          };
+        }),
+    })).filter(g => g.items.length);
+
+    const parcelasNum = Number(f.parcelas) || 0;
+    const parcelaValor = parcelasNum > 0 ? f.valor / parcelasNum : 0;
+
+    return {
+      isDesktop: s.isDesktop,
+      contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
+      period: s.period,
+      onPeriodChange: (next) => this.setState({ period: next }, () => this.carregar()),
+      onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
+      onSettings: () => { window.location.href = 'Configurações.dc.html'; },
+      totalMes: s.entries.reduce((sum, e) => sum + Number(e.valor), 0),
+      formTitle: s.editingId ? 'Editar gasto' : 'Novo gasto',
+      saveLabel: s.editingId ? 'Salvar alterações' : 'Salvar saída',
+      form: f,
+      allCategories,
+      newCatOpen: s.newCatOpen, newCatName: s.newCatName,
+      onOpenNewCat: () => this.setState({ newCatOpen: true }),
+      onNewCatNameChange: (e) => this.setState({ newCatName: e.target.value }),
+      onAddNewCat: () => this.addNewCat(),
+      showDividaAviso: !!divida,
+      showFuturoAviso: !!cofrinho,
+      dividaNome: divida ? divida.nome : '',
+      cofrinhoNome: cofrinho ? cofrinho.nome : '',
+      formas, isCredito: f.forma === 'credito', cartoes,
+      parceladoOptions, isParcelado: f.forma === 'credito' && f.parcelado,
+      onParcelasChange: (e) => this.setForm({ parcelas: e.target.value.replace(/\D/g, '').slice(0, 2) }),
+      onParcelasBlur: () => { const n = Number(f.parcelas); this.setForm({ parcelas: n ? String(Math.min(24, Math.max(2, n))) : '' }); },
+      parcelaValorFormatted: formatBRL(parcelaValor),
+      membros,
+      canSave: f.valor > 0 && !!f.category
+        && (!(f.forma === 'credito') || !!f.cartao)
+        && (!(f.forma === 'credito' && f.parcelado) || (parcelasNum >= 2 && parcelasNum <= 24)),
+      onValorChange: (v) => this.setForm({ valor: v }),
+      onDataChange: (e) => this.setForm({ data: e.target.value }),
+      onObservacaoChange: (e) => this.setForm({ observacao: e.target.value }),
+      onSave: () => this.onSave(),
+      confirmingEditScope: s.confirmingEditScope,
+      onSaveOnlyThis: () => this.gravar('atual'),
+      onSaveAllFuture: () => this.gravar('futuras'),
+      onCancelEditScope: () => this.setState({ confirmingEditScope: false }),
+      filtroCategoria: s.filtroCategoria, filtroMembro: s.filtroMembro, filtroForma: s.filtroForma,
+      onFiltroCategoria: (e) => this.setState({ filtroCategoria: e.target.value }),
+      onFiltroMembro: (e) => this.setState({ filtroMembro: e.target.value }),
+      onFiltroForma: (e) => this.setState({ filtroForma: e.target.value }),
+      groups,
+    };
+  }
+}
+</script>
+</body>
+</html>

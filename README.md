@@ -68,37 +68,71 @@ parcela, então a soma das parcelas bate exatamente com o valor da compra
 
 ## Estrutura
 
+As telas são as do Claude Design, com layout, cores e componentes
+intactos. Só o bloco de lógica de cada página mudou: saiu o array fixo,
+entrou o Supabase.
+
 ```
+index.html            login por PIN (+ tela do versículo)
+Resumo.dc.html        painel
+Entradas.dc.html      entradas e saques de cofrinho
+Saídas.dc.html        gastos, parcelamento, categorias
+Dívidas.dc.html       dívidas e pagamentos
+Futuro.dc.html        cofrinhos
+Faturas.dc.html       cartões e faturas
+Configurações.dc.html membros da família
+PeriodFilter.dc.html  componente de período
+_ds/                  design system (não mexer)
+support.js            runtime do design (não mexer)
 app/
-  config.js     URL e chave publishable
-  supabase.js   cliente
-  auth.js       entrarComPin / sair / exigirSessao
-  db.js         CRUD + automações + realtime
+  casa.js             camada de dados (window.Casa)
+  vendor/             supabase-js (UMD)
 supabase/
-  migrations/   esquema, triggers, RPCs, RLS
-  functions/    edge function pin-login
+  migrations/         esquema, triggers, RPCs, RLS
+  functions/          edge function pin-login
 ```
+
+O `casa.js` é script clássico, não módulo: o runtime do design avalia a
+lógica de cada página com `new Function`, onde `import` não existe. Por
+isso ele entra no `<head>`, antes de tudo, e expõe `window.Casa`.
 
 ### Usando a camada de dados
 
 ```js
-import { exigirSessao } from "./app/auth.js";
-import { saidas, categorias, cofrinhos, faturas, aoMudar } from "./app/db.js";
+await Casa.auth.exigirSessao();        // manda pro login se não houver sessão
 
-await exigirSessao();                  // manda pro login se não houver sessão
+const cats = await Casa.categorias.listarPorTipo("saida");
+await Casa.saidas.criar({ descricao: "Mercado", valor: 240.5,
+                          data: "2026-10-03", categoria_id: cats[0].id,
+                          forma_pagamento: "pix" });
 
-const cats = await categorias.listarPorTipo("saida");
-await saidas.criar({ descricao: "Mercado", valor: 240.5, data: "2026-10-03",
-                     categoria_id: cats[0].id, forma_pagamento: "pix" });
+await Casa.cofrinhos.sacar(cofreId, 500);   // já cria a entrada "Resgate"
+const fat = await Casa.faturas.listar(cartaoId);
 
-await cofrinhos.sacar(cofreId, 500);   // já cria a entrada "Resgate"
-const fat = await faturas.listar(cartaoId);
-
-aoMudar(["saidas", "entradas"], recarregar);  // alguém da família mexeu
+Casa.aoMudar(["saidas", "entradas"], recarregar);  // alguém da família mexeu
 ```
 
 `aoMudar` existe porque os dados são compartilhados: a tela se atualiza
 quando outra pessoa lança algo, sem recarregar.
+
+### Categorias e automação
+
+Uma categoria liga o lançamento à automação. As categorias base (Casa,
+Carro, Pessoal, Outros, Salário, Extra) guardam um `slug`, que é o que o
+design system usa para dar cor e ícone ao chip.
+
+Cada **dívida** e cada **cofrinho** ganha automaticamente a sua categoria
+de saída, criada por trigger. Lançar uma saída nela abate a dívida ou
+engorda o cofrinho. Categoria criada pela família fica sem slug e aparece
+com o estilo neutro, igual ao protótipo.
+
+## Pontos em aberto
+
+- **Editar o número de parcelas** de uma compra existente refaz o grupo
+  inteiro a partir da data original da compra. Nesse caso a pergunta
+  "só esta / esta e futuras" não aparece, porque não se aplica.
+- **Sair da conta** não existe na interface: o design não tem esse botão.
+  A sessão fica no navegador e se renova sozinha.
 
 ## Migrations
 

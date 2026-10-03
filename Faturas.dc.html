@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<script src="./app/vendor/supabase.umd.js"></script>
+<script src="./app/casa.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/base.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
+  <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
+  <style>
+    body{margin:0;}
+    a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
+  </style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:var(--bg-app);font-family:var(--font-body);">
+  <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Sidebar" active="faturas" on-select="{{ onNavigate }}" hint-size="248px,100%" style="position:sticky;top:0;height:100vh;"></x-import>
+  </sc-if>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Souza" title="Faturas" month="9" year="2026" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="{{ toggleIcon }}" on-click="{{ onToggleForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
+
+      <sc-if value="{{ formOpen }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Novo cartão" hint-size="100%,460px" style="gap:16px;">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.TextInput" label="Nome" value="{{ form.nome }}" on-change="{{ onNomeChange }}" placeholder="Ex.: Nubank" hint-size="100%,68px"></x-import>
+
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Bandeira</label>
+            <select value="{{ form.bandeira }}" onChange="{{ onBandeiraChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;">
+              <option value="visa">Visa</option>
+              <option value="mastercard">Mastercard</option>
+              <option value="elo">Elo</option>
+            </select>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Cor do cartão</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <sc-for list="{{ swatches }}" as="sw" hint-placeholder-count="11">
+                <button type="button" title="{{ sw.label }}" onClick="{{ sw.onSelect }}" style="{{ sw.style }}"></button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;">
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Dia de fechamento</label>
+              <input type="number" min="1" max="31" value="{{ form.diaFechamento }}" onChange="{{ onFechamentoChange }}" onBlur="{{ onFechamentoBlur }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-numeric);font-size:15px;color:var(--text-primary);outline:none;"></input>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Dia de vencimento</label>
+              <input type="number" min="1" max="31" value="{{ form.diaVencimento }}" onChange="{{ onVencimentoChange }}" onBlur="{{ onVencimentoBlur }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-numeric);font-size:15px;color:var(--text-primary);outline:none;"></input>
+            </div>
+          </div>
+
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Limite" value="{{ form.limite }}" on-change="{{ onLimiteChange }}" hint-size="100%,68px"></x-import>
+
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSave }}" on-click="{{ onSave }}" hint-size="100%,52px">Salvar cartão</x-import>
+        </x-import>
+      </sc-if>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
+        <sc-for list="{{ cartoes }}" as="c" hint-placeholder-count="2">
+          <button type="button" onClick="{{ c.onSelect }}" style="{{ c.cardStyle }}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <span style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85;">{{ c.bandeiraLabel }}</span>
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="wallet" size="22" color="{{ c.iconColor }}" hint-size="22px,22px"></x-import>
+            </div>
+            <span style="font-family:var(--font-display);font-weight:800;font-size:19px;letter-spacing:-0.01em;">{{ c.nome }}</span>
+            <div style="display:flex;justify-content:space-between;font-size:12px;opacity:0.9;">
+              <span>Fecha dia {{ c.diaFechamento }}</span>
+              <span>Vence dia {{ c.diaVencimento }}</span>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ selected }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="primary" icon="receipt-text" label="Fatura atual — {{ selected.nome }}" value="{{ selected.faturaAtual }}" footer="{{ selected.footer }}" hint-size="100%,150px"></x-import>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;">
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Maiores gastos por categoria" hint-size="100%,220px">
+              <sc-for list="{{ selected.porCategoria }}" as="pc" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  <div style="display:flex;justify-content:space-between;font-size:13px;">
+                    <span style="color:var(--text-primary);font-weight:500;">{{ pc.label }}</span>
+                    <span style="font-family:var(--font-numeric);font-weight:600;color:var(--text-primary);">R$ {{ pc.valorFormatted }}</span>
+                  </div>
+                  <div style="height:7px;border-radius:var(--radius-pill);background:var(--cream-200);overflow:hidden;">
+                    <div style="{{ pc.barStyle }}"></div>
+                  </div>
+                </div>
+              </sc-for>
+            </x-import>
+
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Maiores gastos por membro" hint-size="100%,220px">
+              <sc-for list="{{ selected.porMembro }}" as="pm" hint-placeholder-count="2">
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  <div style="display:flex;justify-content:space-between;font-size:13px;">
+                    <span style="color:var(--text-primary);font-weight:500;">{{ pm.label }}</span>
+                    <span style="font-family:var(--font-numeric);font-weight:600;color:var(--text-primary);">R$ {{ pm.valorFormatted }}</span>
+                  </div>
+                  <div style="height:7px;border-radius:var(--radius-pill);background:var(--cream-200);overflow:hidden;">
+                    <div style="{{ pm.barStyle }}"></div>
+                  </div>
+                </div>
+              </sc-for>
+            </x-import>
+          </div>
+
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Comprometido nos próximos meses" subtitle="Parcelas em aberto neste cartão" hint-size="100%,160px">
+            <sc-for list="{{ selected.comprometido }}" as="cm" hint-placeholder-count="3">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-default);">
+                <span style="font-size:14px;color:var(--text-primary);font-weight:500;">{{ cm.mesLabel }}</span>
+                <span style="font-size:13px;color:var(--text-secondary);">R$ {{ cm.valorFormatted }} em {{ cm.qtd }} parcelas ativas</span>
+              </div>
+            </sc-for>
+          </x-import>
+
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Histórico de faturas" subtitle="Fechadas anteriormente" hint-size="100%,160px">
+            <sc-for list="{{ selected.historicoFaturas }}" as="hf" hint-placeholder-count="3">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-default);">
+                <span style="font-size:14px;color:var(--text-primary);font-weight:500;">{{ hf.mesLabel }}</span>
+                <span style="font-family:var(--font-numeric);font-weight:600;color:var(--text-primary);">R$ {{ hf.valorFormatted }}</span>
+              </div>
+            </sc-for>
+          </x-import>
+        </div>
+      </sc-if>
+
+    </div>
+    <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+      <div style="position:sticky;bottom:0;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.BottomNav" active="faturas" on-select="{{ onNavigate }}" hint-size="100%,68px"></x-import>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+function formatBRL(n) {
+  return Math.abs(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const BANDEIRA_LABEL = { visa: 'Visa', mastercard: 'Mastercard', elo: 'Elo' };
+
+function isLightColor(hex) {
+  if (!hex || hex.charAt(0) !== '#') return false;
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 170;
+}
+
+function diaSeguro(ano, mes, dia) {
+  const ultimo = new Date(ano, mes + 1, 0).getDate();
+  return new Date(ano, mes, Math.min(dia, ultimo));
+}
+function iso(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+/**
+ * Fatura que recebe uma compra feita hoje. Mesma regra do banco
+ * (fatura_competencia): comprou até o dia do fechamento, entra na fatura
+ * que fecha neste mês; depois disso, na próxima.
+ */
+function competenciaAtual(diaFechamento) {
+  const hoje = new Date();
+  if (hoje.getDate() <= diaFechamento) {
+    return iso(diaSeguro(hoje.getFullYear(), hoje.getMonth(), diaFechamento));
+  }
+  return iso(diaSeguro(hoje.getFullYear(), hoje.getMonth() + 1, diaFechamento));
+}
+function mesLabelDeISO(s) {
+  const [y, m] = s.split('-').map(Number);
+  return MESES[m - 1] + ' ' + y;
+}
+
+const SWATCHES = [
+  { id: 'azul', label: 'Azul', hex: '#2563EB' },
+  { id: 'verde', label: 'Verde', hex: '#2E9E44' },
+  { id: 'vermelho', label: 'Vermelho', hex: '#D62828' },
+  { id: 'preto', label: 'Preto', hex: '#1C1C1C' },
+  { id: 'amarelo', label: 'Amarelo', hex: '#F2C230', light: true },
+  { id: 'violeta', label: 'Violeta', hex: '#7B3FA0' },
+  { id: 'laranja', label: 'Laranja', hex: '#E8732C' },
+  { id: 'branco', label: 'Branco', hex: '#FFFFFF', light: true },
+  { id: 'rosa', label: 'Rosa', hex: '#E85C9A', light: true },
+  { id: 'marrom', label: 'Marrom', hex: '#7B4B2A' },
+  { id: 'ouro', label: 'Ouro', hex: '#C8963E' },
+];
+
+const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html' };
+
+class Component extends DCLogic {
+  state = {
+    isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    cartoes: [],
+    detalhe: null,
+    selectedId: null,
+    formOpen: false,
+    erro: '',
+    form: { nome: '', bandeira: 'visa', cor: SWATCHES[0].hex, diaFechamento: '10', diaVencimento: '17', limite: 0 },
+  };
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ isDesktop: window.innerWidth >= 900 });
+    window.addEventListener('resize', this.onResize);
+    this.carregar();
+    this.pararEscuta = Casa.aoMudar(['cartoes', 'saidas'], () => this.carregar());
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.onResize);
+    this.pararEscuta && this.pararEscuta();
+  }
+
+  async carregar() {
+    if (!(await Casa.auth.exigirSessao())) return;
+    try {
+      const cartoes = await Casa.cartoes.listar();
+      const selectedId = this.state.selectedId && cartoes.some(c => c.id === this.state.selectedId)
+        ? this.state.selectedId
+        : (cartoes[0] ? cartoes[0].id : null);
+      this.setState({ cartoes, selectedId, erro: '' });
+      if (selectedId) this.carregarDetalhe(cartoes.find(c => c.id === selectedId));
+      else this.setState({ detalhe: null });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  /** Monta a fatura do ciclo atual, o histórico e o que já está comprometido. */
+  async carregarDetalhe(cartao) {
+    if (!cartao) { this.setState({ detalhe: null }); return; }
+    try {
+      const comp = competenciaAtual(cartao.dia_fechamento);
+      const [gastos, todasFaturas, futuras] = await Promise.all([
+        Casa.faturas.lancamentos(cartao.id, comp),
+        Casa.faturas.listar(cartao.id),
+        Casa.faturas.comprometidoFuturo(cartao.id, comp),
+      ]);
+
+      const soma = (lista) => lista.reduce((t, g) => t + Number(g.valor), 0);
+
+      function agrupar(chave, cor) {
+        const mapa = {};
+        gastos.forEach(g => {
+          const k = chave(g) || '—';
+          mapa[k] = (mapa[k] || 0) + Number(g.valor);
+        });
+        const lista = Object.keys(mapa)
+          .map(k => ({ label: k, valor: mapa[k] }))
+          .sort((a, b) => b.valor - a.valor);
+        const max = Math.max.apply(null, lista.map(x => x.valor).concat([1]));
+        return lista.map(x => ({
+          label: x.label, valorFormatted: formatBRL(x.valor),
+          barStyle: { width: ((x.valor / max) * 100) + '%', height: '100%', borderRadius: 'var(--radius-pill)', background: cor },
+        }));
+      }
+
+      const porCompetencia = {};
+      futuras.forEach(p => {
+        const k = p.competencia;
+        porCompetencia[k] = porCompetencia[k] || { valor: 0, qtd: 0 };
+        porCompetencia[k].valor += Number(p.valor);
+        porCompetencia[k].qtd += 1;
+      });
+      const comprometido = Object.keys(porCompetencia).sort().slice(0, 6).map(k => ({
+        mesLabel: mesLabelDeISO(k),
+        valorFormatted: formatBRL(porCompetencia[k].valor),
+        qtd: porCompetencia[k].qtd,
+      }));
+
+      this.setState({
+        detalhe: {
+          nome: cartao.nome,
+          faturaAtual: soma(gastos),
+          footer: `Fecha dia ${cartao.dia_fechamento} · vence dia ${cartao.dia_vencimento}`,
+          porCategoria: agrupar(g => g.categorias && g.categorias.nome, 'var(--color-primary)'),
+          porMembro: agrupar(g => g.membros && g.membros.nome, 'var(--gold-600)'),
+          comprometido,
+          historicoFaturas: todasFaturas
+            .filter(fa => fa.fechamento < comp)
+            .slice(0, 6)
+            .map(fa => ({ mesLabel: mesLabelDeISO(fa.fechamento), valorFormatted: formatBRL(Number(fa.total)) })),
+        },
+      });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  selecionar(cartao) {
+    const fechando = this.state.selectedId === cartao.id;
+    this.setState({ selectedId: fechando ? null : cartao.id, detalhe: fechando ? null : this.state.detalhe });
+    if (!fechando) this.carregarDetalhe(cartao);
+  }
+
+  setForm(patch) { this.setState({ form: { ...this.state.form, ...patch } }); }
+
+  async save() {
+    const f = this.state.form;
+    if (!f.nome) return;
+    try {
+      await Casa.cartoes.criar({
+        nome: f.nome,
+        bandeira: f.bandeira,
+        cor: f.cor,
+        dia_fechamento: Number(f.diaFechamento),
+        dia_vencimento: Number(f.diaVencimento),
+        limite: f.limite || null,
+      });
+      this.setState({
+        formOpen: false, erro: '',
+        form: { nome: '', bandeira: 'visa', cor: SWATCHES[0].hex, diaFechamento: '10', diaVencimento: '17', limite: 0 },
+      });
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  renderVals() {
+    const s = this.state;
+    const f = s.form;
+
+    const swatches = SWATCHES.map(sw => ({
+      label: sw.label,
+      onSelect: () => this.setForm({ cor: sw.hex }),
+      style: { width: 32, height: 32, borderRadius: '50%', background: sw.hex, border: f.cor === sw.hex ? '3px solid var(--text-primary)' : '1px solid var(--border-default)', cursor: 'pointer' },
+    }));
+
+    const cartoes = s.cartoes.map(c => {
+      const cor = c.cor || SWATCHES[0].hex;
+      return {
+        nome: c.nome, bandeiraLabel: BANDEIRA_LABEL[c.bandeira] || c.bandeira || '',
+        diaFechamento: c.dia_fechamento, diaVencimento: c.dia_vencimento,
+        iconColor: isLightColor(cor) ? 'rgba(34,38,43,0.4)' : 'rgba(255,255,255,0.55)',
+        onSelect: () => this.selecionar(c),
+        cardStyle: {
+          display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 20, height: 170, padding: 22,
+          borderRadius: 18, background: cor, color: isLightColor(cor) ? 'var(--ink-900)' : '#fff',
+          border: s.selectedId === c.id ? '3px solid var(--text-primary)' : cor === '#FFFFFF' ? '1px solid var(--border-default)' : '3px solid transparent',
+          cursor: 'pointer', textAlign: 'left', boxShadow: 'var(--shadow-raised)',
+        },
+      };
+    });
+
+    return {
+      isDesktop: s.isDesktop,
+      contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
+      formOpen: s.formOpen,
+      toggleLabel: s.formOpen ? 'Fechar' : 'Novo cartão',
+      toggleIcon: s.formOpen ? 'x' : 'plus',
+      onToggleForm: () => this.setState({ formOpen: !s.formOpen }),
+      onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
+      onSettings: () => { window.location.href = 'Configurações.dc.html'; },
+      form: f,
+      onNomeChange: (v) => this.setForm({ nome: v }),
+      onBandeiraChange: (e) => this.setForm({ bandeira: e.target.value }),
+      onFechamentoChange: (e) => this.setForm({ diaFechamento: e.target.value.replace(/\D/g, '').slice(0, 2) }),
+      onFechamentoBlur: () => { const n = Number(f.diaFechamento); this.setForm({ diaFechamento: n ? String(Math.min(31, Math.max(1, n))) : '' }); },
+      onVencimentoChange: (e) => this.setForm({ diaVencimento: e.target.value.replace(/\D/g, '').slice(0, 2) }),
+      onVencimentoBlur: () => { const n = Number(f.diaVencimento); this.setForm({ diaVencimento: n ? String(Math.min(31, Math.max(1, n))) : '' }); },
+      onLimiteChange: (v) => this.setForm({ limite: v }),
+      canSave: !!f.nome && Number(f.diaFechamento) >= 1 && Number(f.diaFechamento) <= 31 && Number(f.diaVencimento) >= 1 && Number(f.diaVencimento) <= 31,
+      onSave: () => this.save(),
+      swatches,
+      cartoes,
+      selected: s.detalhe,
+    };
+  }
+}
+</script>
+</body>
+</html>

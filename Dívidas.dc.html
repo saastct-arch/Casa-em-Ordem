@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<script src="./app/vendor/supabase.umd.js"></script>
+<script src="./app/casa.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/base.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
+  <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
+  <style>
+    body{margin:0;}
+    a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
+  </style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:var(--bg-app);font-family:var(--font-body);">
+  <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Sidebar" active="dividas" on-select="{{ onNavigate }}" hint-size="248px,100%" style="position:sticky;top:0;height:100vh;"></x-import>
+  </sc-if>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Souza" title="Dívidas" month="9" year="2026" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="alert" icon="hand-coins" label="Saldo devedor total" value="{{ saldoTotal }}" hint-size="100%,130px"></x-import>
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="{{ toggleIcon }}" on-click="{{ onToggleForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
+
+      <sc-if value="{{ formOpen }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Nova dívida" hint-size="100%,440px" style="gap:18px;">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.TextInput" label="Nome" value="{{ form.nome }}" on-change="{{ onNomeChange }}" placeholder="Ex.: Financiamento do carro" hint-size="100%,68px"></x-import>
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Valor total" value="{{ form.valorTotal }}" on-change="{{ onValorTotalChange }}" size="lg" hint-size="100%,68px"></x-import>
+
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Data de cadastro</label>
+            <input type="date" value="{{ form.dataCadastro }}" onChange="{{ onDataChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;"></input>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;">
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Quantidade de parcelas</label>
+              <input type="number" min="1" max="120" value="{{ form.parcelas }}" onChange="{{ onParcelasChange }}" onBlur="{{ onParcelasBlur }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-numeric);font-size:15px;color:var(--text-primary);outline:none;"></input>
+            </div>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Valor da parcela" value="{{ form.valorParcela }}" on-change="{{ onValorParcelaChange }}" hint="{{ parcelaHint }}" hint-size="100%,68px"></x-import>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Taxa de juros (opcional)</label>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="number" min="0" step="0.1" value="{{ form.juros }}" onChange="{{ onJurosChange }}" placeholder="0,0" style="height:var(--control-h);width:120px;padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-numeric);font-size:15px;color:var(--text-primary);outline:none;"></input>
+              <span style="font-size:13px;color:var(--text-secondary);">% ao mês</span>
+            </div>
+          </div>
+
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSave }}" on-click="{{ onSave }}" hint-size="100%,52px">Salvar dívida</x-import>
+        </x-import>
+      </sc-if>
+
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:13px;font-weight:600;color:var(--text-primary);">Ordenar por</span>
+        <div style="display:flex;gap:6px;">
+          <sc-for list="{{ sortOptions }}" as="opt" hint-placeholder-count="2">
+            <button type="button" onClick="{{ opt.onSelect }}" style="{{ opt.style }}">{{ opt.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <sc-for list="{{ dividas }}" as="d" hint-placeholder-count="3">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" hint-size="100%,160px" style="{{ d.cardStyle }}">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;cursor:pointer;" onClick="{{ d.onToggle }}">
+              <div style="display:flex;flex-direction:column;gap:4px;min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--text-primary);">{{ d.nome }}</span>
+                  <sc-if value="{{ d.isPriority }}" hint-placeholder-val="{{ false }}">
+                    <span style="display:inline-flex;align-items:center;height:20px;padding:0 9px;border-radius:var(--radius-pill);background:var(--color-alert-soft);color:var(--color-alert);font-size:11px;font-weight:700;">Maior juros</span>
+                  </sc-if>
+                </div>
+                <span style="{{ d.statusStyle }}">{{ d.statusLabel }}</span>
+              </div>
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="{{ d.chevronIcon }}" size="20" color="var(--text-muted)" hint-size="20px,20px"></x-import>
+            </div>
+
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.ProgressBar" tone="{{ d.progressTone }}" value="{{ d.pctQuitado }}" caption="R$ {{ d.pagoFormatted }} de R$ {{ d.totalFormatted }} quitados" hint-size="100%,40px"></x-import>
+
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary);">
+              <span>Saldo atual: <strong style="color:var(--text-primary);font-family:var(--font-numeric);">R$ {{ d.saldoFormatted }}</strong></span>
+              <span>Parcelas restantes: <strong style="color:var(--text-primary);font-family:var(--font-numeric);">{{ d.parcelasRestantes }}/{{ d.parcelasTotal }}</strong></span>
+            </div>
+
+            <sc-if value="{{ d.hasJuros }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:12px;color:var(--text-secondary);">Taxa de juros: {{ d.jurosFormatted }}% ao mês</span>
+            </sc-if>
+
+            <sc-if value="{{ d.expanded }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:2px;padding-top:8px;border-top:1px solid var(--border-default);">
+                <span style="font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px;">Histórico de pagamentos · da aba Saídas</span>
+                <sc-for list="{{ d.pagamentos }}" as="p" hint-placeholder-count="3">
+                  <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-default);font-size:13px;">
+                    <span style="color:var(--text-secondary);">{{ p.dataLabel }}</span>
+                    <span style="font-family:var(--font-numeric);font-weight:600;color:var(--text-primary);">R$ {{ p.valorFormatted }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </x-import>
+        </sc-for>
+      </div>
+
+    </div>
+    <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+      <div style="position:sticky;bottom:0;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.BottomNav" active="dividas" on-select="{{ onNavigate }}" hint-size="100%,68px"></x-import>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+function formatBRL(n) {
+  return Math.abs(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+const MESES_LONGO = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function dateLabel(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${String(d).padStart(2, '0')} de ${MESES_LONGO[m - 1]}`;
+}
+function hojeISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html' };
+
+class Component extends DCLogic {
+  state = {
+    isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    dividas: [],
+    pagamentos: {},
+    formOpen: false,
+    expandedId: null,
+    sortBy: 'saldo',
+    lastField: 'total',
+    erro: '',
+    form: { nome: '', valorTotal: 0, dataCadastro: hojeISO(), parcelas: '12', valorParcela: 0, juros: '' },
+  };
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ isDesktop: window.innerWidth >= 900 });
+    window.addEventListener('resize', this.onResize);
+    this.carregar();
+    // O saldo cai sozinho quando alguém lança uma saída na categoria da
+    // dívida, então vale escutar saidas também.
+    this.pararEscuta = Casa.aoMudar(['dividas', 'saidas'], () => this.carregar());
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.onResize);
+    this.pararEscuta && this.pararEscuta();
+  }
+
+  async carregar() {
+    if (!(await Casa.auth.exigirSessao())) return;
+    try {
+      const dividas = await Casa.dividas.listar();
+      this.setState({ dividas, erro: '' });
+      if (this.state.expandedId) this.carregarPagamentos(this.state.expandedId);
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  async carregarPagamentos(dividaId) {
+    try {
+      const lista = await Casa.dividas.pagamentos(dividaId);
+      this.setState({ pagamentos: { ...this.state.pagamentos, [dividaId]: lista } });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  toggleExpand(d) {
+    const abrindo = this.state.expandedId !== d.id;
+    this.setState({ expandedId: abrindo ? d.id : null });
+    if (abrindo) this.carregarPagamentos(d.id);
+  }
+
+  setForm(patch) { this.setState({ form: { ...this.state.form, ...patch } }); }
+
+  onValorTotalChange(v) {
+    const parcelas = Number(this.state.form.parcelas) || 0;
+    this.setState({ lastField: 'total', form: { ...this.state.form, valorTotal: v, valorParcela: parcelas > 0 ? v / parcelas : 0 } });
+  }
+  onValorParcelaChange(v) {
+    const parcelas = Number(this.state.form.parcelas) || 0;
+    this.setState({ lastField: 'parcela', form: { ...this.state.form, valorParcela: v, valorTotal: v * parcelas } });
+  }
+  onParcelasChange(raw) {
+    const f = this.state.form;
+    const parcelas = raw.replace(/\D/g, '').slice(0, 3);
+    const n = Number(parcelas) || 0;
+    if (this.state.lastField === 'parcela') this.setForm({ parcelas, valorTotal: f.valorParcela * n });
+    else this.setForm({ parcelas, valorParcela: n > 0 ? f.valorTotal / n : 0 });
+  }
+  onParcelasBlur() {
+    const n = Number(this.state.form.parcelas);
+    this.setForm({ parcelas: n ? String(Math.min(120, Math.max(1, n))) : '' });
+  }
+
+  async save() {
+    const f = this.state.form;
+    if (!f.nome || !f.valorTotal) return;
+    try {
+      // saldo_atual nasce igual ao total: cada saída na categoria desta
+      // dívida abate o saldo automaticamente, via trigger no banco.
+      await Casa.dividas.criar({
+        nome: f.nome,
+        valor_total: f.valorTotal,
+        saldo_atual: f.valorTotal,
+        parcelas_total: Number(f.parcelas),
+        valor_parcela: f.valorParcela,
+        juros: f.juros === '' ? null : Number(f.juros),
+      });
+      this.setState({
+        formOpen: false, lastField: 'total', erro: '',
+        form: { nome: '', valorTotal: 0, dataCadastro: f.dataCadastro, parcelas: '12', valorParcela: 0, juros: '' },
+      });
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  renderVals() {
+    const s = this.state;
+    const f = s.form;
+    const jurosList = s.dividas.filter(d => d.juros != null).map(d => Number(d.juros));
+    const maxJuros = jurosList.length ? Math.max.apply(null, jurosList) : 0;
+
+    const computed = s.dividas.map(d => {
+      const total = Number(d.valor_total);
+      const saldo = Math.max(0, Number(d.saldo_atual));
+      const pago = Math.max(0, total - saldo);
+      const parcela = Number(d.valor_parcela) || 0;
+      const parcelasTotal = d.parcelas_total || 0;
+      const parcelasPagas = parcela > 0 ? Math.round(pago / parcela) : 0;
+      const pct = total > 0 ? (pago / total) * 100 : 0;
+      const quitada = d.quitada || saldo <= 0;
+      const juros = d.juros == null ? null : Number(d.juros);
+      return {
+        id: d.id, nome: d.nome, juros, total, saldo, pago, pct, quitada, parcelasTotal,
+        parcelasRestantes: Math.max(0, parcelasTotal - parcelasPagas),
+        isPriority: !quitada && juros != null && juros === maxJuros && maxJuros > 0,
+      };
+    });
+
+    const sorted = [...computed].sort((a, b) => s.sortBy === 'juros' ? (b.juros || -1) - (a.juros || -1) : b.saldo - a.saldo);
+
+    const dividas = sorted.map(d => ({
+      nome: d.nome,
+      isPriority: d.isPriority,
+      statusLabel: d.quitada ? 'Quitada' : 'Em dia',
+      statusStyle: {
+        display: 'inline-flex', alignSelf: 'flex-start', fontSize: 12, fontWeight: 600,
+        color: d.quitada ? 'var(--text-secondary)' : 'var(--color-success)',
+      },
+      progressTone: d.quitada ? 'success' : 'primary',
+      pctQuitado: d.pct,
+      pagoFormatted: formatBRL(d.pago), totalFormatted: formatBRL(d.total), saldoFormatted: formatBRL(d.saldo),
+      parcelasRestantes: d.parcelasRestantes, parcelasTotal: d.parcelasTotal,
+      hasJuros: d.juros != null, jurosFormatted: d.juros != null ? String(d.juros).replace('.', ',') : '',
+      expanded: s.expandedId === d.id,
+      chevronIcon: s.expandedId === d.id ? 'chevron-down' : 'chevron-right',
+      onToggle: () => this.toggleExpand(d),
+      pagamentos: (s.pagamentos[d.id] || []).map(p => ({
+        dataLabel: dateLabel(p.data), valorFormatted: formatBRL(Number(p.valor)),
+      })),
+      cardStyle: d.isPriority ? { gap: 14, border: '1px solid var(--terra-100)', boxShadow: '0 0 0 1px var(--terra-100) inset' } : { gap: 14 },
+    }));
+
+    const sortOptions = [
+      { id: 'saldo', label: 'Saldo devedor' },
+      { id: 'juros', label: 'Taxa de juros' },
+    ].map(o => ({
+      label: o.label, onSelect: () => this.setState({ sortBy: o.id }),
+      style: {
+        height: 32, padding: '0 14px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer',
+        fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
+        background: s.sortBy === o.id ? 'var(--color-primary-soft)' : 'var(--cream-200)',
+        color: s.sortBy === o.id ? 'var(--emerald-800)' : 'var(--text-secondary)',
+      },
+    }));
+
+    return {
+      isDesktop: s.isDesktop,
+      contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
+      saldoTotal: computed.reduce((sum, d) => sum + d.saldo, 0),
+      formOpen: s.formOpen,
+      toggleLabel: s.formOpen ? 'Fechar' : 'Nova dívida',
+      toggleIcon: s.formOpen ? 'x' : 'plus',
+      onToggleForm: () => this.setState({ formOpen: !s.formOpen }),
+      onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
+      onSettings: () => { window.location.href = 'Configurações.dc.html'; },
+      form: f,
+      onNomeChange: (v) => this.setForm({ nome: v }),
+      onValorTotalChange: (v) => this.onValorTotalChange(v),
+      onDataChange: (e) => this.setForm({ dataCadastro: e.target.value }),
+      onParcelasChange: (e) => this.onParcelasChange(e.target.value),
+      onParcelasBlur: () => this.onParcelasBlur(),
+      onValorParcelaChange: (v) => this.onValorParcelaChange(v),
+      parcelaHint: s.lastField === 'parcela' ? 'Definido manualmente · valor total calculado' : 'Calculado automaticamente a partir do valor total',
+      onJurosChange: (e) => this.setForm({ juros: e.target.value }),
+      canSave: !!f.nome && f.valorTotal > 0 && Number(f.parcelas) >= 1,
+      onSave: () => this.save(),
+      sortOptions,
+      dividas,
+    };
+  }
+}
+</script>
+</body>
+</html>
