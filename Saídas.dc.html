@@ -108,8 +108,8 @@
 
         <div style="display:flex;flex-direction:column;gap:8px;">
           <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Forma de pagamento</label>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-            <sc-for list="{{ formas }}" as="f" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+            <sc-for list="{{ formas }}" as="f" hint-placeholder-count="4">
               <button type="button" onClick="{{ f.onSelect }}" style="{{ f.style }}">
                 <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="{{ f.icon }}" size="17" hint-size="17px,17px"></x-import>
                 {{ f.label }}
@@ -198,7 +198,7 @@
           </select>
           <select class="ceo-select" value="{{ filtroForma }}" onChange="{{ onFiltroForma }}" style="height:var(--control-h-sm);padding:0 12px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:13px;color:var(--text-primary);outline:none;">
             <option value="todas">Pagamento: todas</option>
-            <sc-for list="{{ formas }}" as="f" hint-placeholder-count="3">
+            <sc-for list="{{ formas }}" as="f" hint-placeholder-count="4">
               <option value="{{ f.id }}">{{ f.label }}</option>
             </sc-for>
           </select>
@@ -276,6 +276,7 @@ function mesAtualPeriod() {
 const FORMAS = [
   { id: 'pix', label: 'Pix', icon: 'zap' },
   { id: 'debito', label: 'Débito', icon: 'wallet' },
+  { id: 'boleto', label: 'Boleto', icon: 'file-text' },
   { id: 'credito', label: 'Cartão de crédito', icon: 'receipt-text' },
 ];
 const CORES_CARTAO = ['var(--cat-pessoal)', 'var(--cat-carro)', 'var(--cat-casa)', 'var(--cat-outros)', 'var(--cat-divida)', 'var(--cat-futuro)'];

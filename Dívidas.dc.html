@@ -72,7 +72,7 @@
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="{{ toggleIcon }}" on-click="{{ onToggleForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
 
       <sc-if value="{{ formOpen }}" hint-placeholder-val="{{ false }}">
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Nova dívida" hint-size="100%,440px" style="gap:18px;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="{{ formTitle }}" hint-size="100%,440px" style="gap:18px;">
           <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.TextInput" label="Nome" value="{{ form.nome }}" on-change="{{ onNomeChange }}" placeholder="Ex.: Financiamento do carro" hint-size="100%,68px"></x-import>
           <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Valor total" value="{{ form.valorTotal }}" on-change="{{ onValorTotalChange }}" size="lg" hint-size="100%,68px"></x-import>
 
@@ -97,7 +97,7 @@
             </div>
           </div>
 
-          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSave }}" on-click="{{ onSave }}" hint-size="100%,52px">Salvar dívida</x-import>
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSave }}" on-click="{{ onSave }}" hint-size="100%,52px">{{ saveLabel }}</x-import>
         </x-import>
       </sc-if>
 
@@ -113,8 +113,8 @@
       <div style="display:flex;flex-direction:column;gap:14px;">
         <sc-for list="{{ dividas }}" as="d" hint-placeholder-count="3">
           <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" hint-size="100%,160px" style="{{ d.cardStyle }}">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;cursor:pointer;" onClick="{{ d.onToggle }}">
-              <div style="display:flex;flex-direction:column;gap:4px;min-width:0;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+              <div style="display:flex;flex-direction:column;gap:4px;min-width:0;flex:1;cursor:pointer;" onClick="{{ d.onToggle }}">
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                   <span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--text-primary);">{{ d.nome }}</span>
                   <sc-if value="{{ d.isPriority }}" hint-placeholder-val="{{ false }}">
@@ -123,8 +123,22 @@
                 </div>
                 <span style="{{ d.statusStyle }}">{{ d.statusLabel }}</span>
               </div>
-              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="{{ d.chevronIcon }}" size="20" color="var(--text-muted)" hint-size="20px,20px"></x-import>
+              <div style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="pencil" label="Editar" size="32" on-click="{{ d.onEdit }}" hint-size="32px,32px"></x-import>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="trash-2" label="Excluir" size="32" tone="danger" on-click="{{ d.onDelete }}" hint-size="32px,32px"></x-import>
+                <span style="display:inline-flex;cursor:pointer;padding:6px;" onClick="{{ d.onToggle }}">
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="{{ d.chevronIcon }}" size="20" color="var(--text-muted)" hint-size="20px,20px"></x-import>
+                </span>
+              </div>
             </div>
+
+            <sc-if value="{{ d.confirmingDelete }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0;">
+                <span style="font-size:13px;color:var(--text-secondary);margin-right:auto;">{{ d.deleteMsg }}</span>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="danger" size="sm" on-click="{{ d.onConfirmDelete }}" hint-size="auto,32px">Excluir</x-import>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ d.onCancelDelete }}" hint-size="auto,32px">Cancelar</x-import>
+              </div>
+            </sc-if>
 
             <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.ProgressBar" tone="{{ d.progressTone }}" value="{{ d.pctQuitado }}" caption="R$ {{ d.pagoFormatted }} de R$ {{ d.totalFormatted }} quitados" hint-size="100%,40px"></x-import>
 
@@ -182,6 +196,8 @@ class Component extends DCLogic {
     dividas: [],
     pagamentos: {},
     formOpen: false,
+    editingId: null,
+    confirmDeleteId: null,
     expandedId: null,
     sortBy: 'saldo',
     lastField: 'total',
@@ -230,6 +246,45 @@ class Component extends DCLogic {
 
   setForm(patch) { this.setState({ form: { ...this.state.form, ...patch } }); }
 
+  editar(d) {
+    const parcelas = d.parcelas_total || 1;
+    this.setState({
+      editingId: d.id, formOpen: true, confirmDeleteId: null, lastField: 'total',
+      form: {
+        nome: d.nome,
+        valorTotal: Number(d.valor_total),
+        dataCadastro: this.state.form.dataCadastro,
+        parcelas: String(parcelas),
+        valorParcela: Number(d.valor_parcela) || Number(d.valor_total) / parcelas,
+        juros: d.juros == null ? '' : String(d.juros),
+      },
+    });
+  }
+
+  cancelarEdicao() {
+    this.setState({
+      editingId: null, formOpen: false, lastField: 'total',
+      form: { nome: '', valorTotal: 0, dataCadastro: this.state.form.dataCadastro,
+              parcelas: '12', valorParcela: 0, juros: '' },
+    });
+  }
+
+  async pedirExclusao(d) {
+    this.setState({ confirmDeleteId: d.id });
+  }
+
+  async excluir(d) {
+    try {
+      // Leva junto a categoria criada pelo trigger, se ninguém lançou nela.
+      await Casa.dividas.excluir(d.id);
+      this.setState({ confirmDeleteId: null });
+      if (this.state.editingId === d.id) this.cancelarEdicao();
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message, confirmDeleteId: null });
+    }
+  }
+
   onValorTotalChange(v) {
     const parcelas = Number(this.state.form.parcelas) || 0;
     this.setState({ lastField: 'total', form: { ...this.state.form, valorTotal: v, valorParcela: parcelas > 0 ? v / parcelas : 0 } });
@@ -253,19 +308,30 @@ class Component extends DCLogic {
   async save() {
     const f = this.state.form;
     if (!f.nome || !f.valorTotal) return;
+    const campos = {
+      nome: f.nome,
+      valor_total: f.valorTotal,
+      parcelas_total: Number(f.parcelas),
+      valor_parcela: f.valorParcela,
+      juros: f.juros === '' ? null : Number(f.juros),
+    };
     try {
-      // saldo_atual nasce igual ao total: cada saída na categoria desta
-      // dívida abate o saldo automaticamente, via trigger no banco.
-      await Casa.dividas.criar({
-        nome: f.nome,
-        valor_total: f.valorTotal,
-        saldo_atual: f.valorTotal,
-        parcelas_total: Number(f.parcelas),
-        valor_parcela: f.valorParcela,
-        juros: f.juros === '' ? null : Number(f.juros),
-      });
+      if (this.state.editingId) {
+        const antiga = this.state.dividas.find(d => d.id === this.state.editingId);
+        // Mudar o total não pode apagar o que já foi pago: o saldo anda
+        // junto com a diferença, em vez de voltar ao valor cheio.
+        const pago = antiga ? Number(antiga.valor_total) - Number(antiga.saldo_atual) : 0;
+        const saldo = Math.max(0, f.valorTotal - pago);
+        await Casa.dividas.atualizar(this.state.editingId, {
+          ...campos, saldo_atual: saldo, quitada: saldo <= 0,
+        });
+      } else {
+        // saldo_atual nasce igual ao total: cada saída na categoria desta
+        // dívida abate o saldo automaticamente, via trigger no banco.
+        await Casa.dividas.criar({ ...campos, saldo_atual: f.valorTotal });
+      }
       this.setState({
-        formOpen: false, lastField: 'total', erro: '',
+        formOpen: false, editingId: null, lastField: 'total', erro: '',
         form: { nome: '', valorTotal: 0, dataCadastro: f.dataCadastro, parcelas: '12', valorParcela: 0, juros: '' },
       });
       await this.carregar();
@@ -315,6 +381,14 @@ class Component extends DCLogic {
       expanded: s.expandedId === d.id,
       chevronIcon: s.expandedId === d.id ? 'chevron-down' : 'chevron-right',
       onToggle: () => this.toggleExpand(d),
+      onEdit: () => this.editar(s.dividas.find(x => x.id === d.id)),
+      onDelete: () => this.pedirExclusao(d),
+      confirmingDelete: s.confirmDeleteId === d.id,
+      deleteMsg: d.pago > 0
+        ? `Excluir "${d.nome}"? Os pagamentos já lançados ficam em Saídas.`
+        : `Excluir "${d.nome}"?`,
+      onConfirmDelete: () => this.excluir(d),
+      onCancelDelete: () => this.setState({ confirmDeleteId: null }),
       pagamentos: (s.pagamentos[d.id] || []).map(p => ({
         dataLabel: dateLabel(p.data), valorFormatted: formatBRL(Number(p.valor)),
       })),
@@ -339,9 +413,11 @@ class Component extends DCLogic {
       contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
       saldoTotal: computed.reduce((sum, d) => sum + d.saldo, 0),
       formOpen: s.formOpen,
+      formTitle: s.editingId ? 'Editar dívida' : 'Nova dívida',
+      saveLabel: s.editingId ? 'Salvar alterações' : 'Salvar dívida',
       toggleLabel: s.formOpen ? 'Fechar' : 'Nova dívida',
       toggleIcon: s.formOpen ? 'x' : 'plus',
-      onToggleForm: () => this.setState({ formOpen: !s.formOpen }),
+      onToggleForm: () => (s.formOpen ? this.cancelarEdicao() : this.setState({ formOpen: true })),
       onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },
       form: f,

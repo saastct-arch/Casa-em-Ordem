@@ -185,6 +185,24 @@ compartilhamento, onde há espaço.
 Para regerar os PNG depois de mexer nos SVG, rasterize `brand/*.svg` e
 `brand/og.html` nos tamanhos da tabela.
 
+## Editar e excluir
+
+Todas as abas permitem editar e excluir o que registram. Três exclusões
+têm regra própria, por causa do que o banco garante:
+
+| Tela | Excluir | Regra |
+|---|---|---|
+| Entradas, Saídas, Configurações | direto | parcelas perguntam o escopo (só esta / esta e futuras) |
+| Dívidas | direto | a categoria criada junto some também, **a menos que** já haja pagamento lançado nela — aí fica, senão o histórico em Saídas perderia o nome |
+| Futuro | bloqueado se houver saque | a entrada "Resgate" ficaria sem cofrinho (`resgate_exige_cofrinho`) |
+| Faturas | bloqueado se houver lançamento | o gasto ficaria sem cartão (`credito_exige_cartao`) |
+
+Nos dois casos bloqueados a tela confere antes e explica o motivo com a
+contagem, em vez de deixar vazar o erro cru do Postgres.
+
+Editar o **valor total** de uma dívida não zera o que já foi pago: o saldo
+anda junto com a diferença.
+
 ## Seletor de mês por tela
 
 | Tela | Seletor | Por quê |

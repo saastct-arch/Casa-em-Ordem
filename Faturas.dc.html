@@ -70,7 +70,7 @@
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="{{ toggleIcon }}" on-click="{{ onToggleForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
 
       <sc-if value="{{ formOpen }}" hint-placeholder-val="{{ false }}">
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Novo cartão" hint-size="100%,460px" style="gap:16px;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="{{ formTitle }}" hint-size="100%,460px" style="gap:16px;">
           <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.TextInput" label="Nome" value="{{ form.nome }}" on-change="{{ onNomeChange }}" placeholder="Ex.: Nubank" hint-size="100%,68px"></x-import>
 
           <div style="display:flex;flex-direction:column;gap:6px;">
@@ -104,7 +104,7 @@
 
           <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Limite" value="{{ form.limite }}" on-change="{{ onLimiteChange }}" hint-size="100%,68px"></x-import>
 
-          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSave }}" on-click="{{ onSave }}" hint-size="100%,52px">Salvar cartão</x-import>
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSave }}" on-click="{{ onSave }}" hint-size="100%,52px">{{ saveLabel }}</x-import>
         </x-import>
       </sc-if>
 
@@ -127,6 +127,20 @@
       <sc-if value="{{ selected }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:16px;">
           <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="primary" icon="receipt-text" label="{{ selected.rotulo }}" value="{{ selected.faturaAtual }}" footer="{{ selected.footer }}" hint-size="100%,150px"></x-import>
+
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:13px;color:var(--text-secondary);margin-right:auto;">{{ selected.acoesMsg }}</span>
+            <sc-if value="{{ !confirmandoExclusao }}" hint-placeholder-val="{{ true }}">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="soft" size="sm" icon="pencil" on-click="{{ onEditarCartao }}" hint-size="auto,36px">Editar cartão</x-import>
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" icon="trash-2" on-click="{{ onExcluirCartao }}" hint-size="auto,36px">Excluir</x-import>
+            </sc-if>
+            <sc-if value="{{ confirmandoExclusao }}" hint-placeholder-val="{{ false }}">
+              <sc-if value="{{ podeExcluirCartao }}" hint-placeholder-val="{{ true }}">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="danger" size="sm" on-click="{{ onConfirmarExclusaoCartao }}" hint-size="auto,36px">Excluir</x-import>
+              </sc-if>
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ onCancelarExclusaoCartao }}" hint-size="auto,36px">{{ cancelarLabel }}</x-import>
+            </sc-if>
+          </div>
 
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;">
             <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Maiores gastos por categoria" hint-size="100%,220px">
@@ -246,6 +260,9 @@ class Component extends DCLogic {
     mesRef: new Date().getMonth(),
     anoRef: new Date().getFullYear(),
     formOpen: false,
+    editingId: null,
+    confirmandoExclusao: false,
+    lancamentosDoCartao: 0,
     erro: '',
     form: { nome: '', bandeira: 'visa', cor: SWATCHES[0].hex, diaFechamento: '10', diaVencimento: '17', limite: 0 },
   };
@@ -349,22 +366,72 @@ class Component extends DCLogic {
   async save() {
     const f = this.state.form;
     if (!f.nome) return;
+    const campos = {
+      nome: f.nome,
+      bandeira: f.bandeira,
+      cor: f.cor,
+      dia_fechamento: Number(f.diaFechamento),
+      dia_vencimento: Number(f.diaVencimento),
+      limite: f.limite || null,
+    };
     try {
-      await Casa.cartoes.criar({
-        nome: f.nome,
-        bandeira: f.bandeira,
-        cor: f.cor,
-        dia_fechamento: Number(f.diaFechamento),
-        dia_vencimento: Number(f.diaVencimento),
-        limite: f.limite || null,
-      });
-      this.setState({
-        formOpen: false, erro: '',
-        form: { nome: '', bandeira: 'visa', cor: SWATCHES[0].hex, diaFechamento: '10', diaVencimento: '17', limite: 0 },
-      });
+      if (this.state.editingId) await Casa.cartoes.atualizar(this.state.editingId, campos);
+      else await Casa.cartoes.criar(campos);
+      this.fecharForm();
       await this.carregar();
     } catch (e) {
       this.setState({ erro: e.message });
+    }
+  }
+
+  fecharForm() {
+    this.setState({
+      formOpen: false, editingId: null, erro: '',
+      form: { nome: '', bandeira: 'visa', cor: SWATCHES[0].hex, diaFechamento: '10', diaVencimento: '17', limite: 0 },
+    });
+  }
+
+  editarCartao() {
+    const c = this.state.cartoes.find(x => x.id === this.state.selectedId);
+    if (!c) return;
+    this.setState({
+      editingId: c.id, formOpen: true, confirmandoExclusao: false,
+      form: {
+        nome: c.nome,
+        bandeira: c.bandeira || 'visa',
+        cor: c.cor || SWATCHES[0].hex,
+        diaFechamento: String(c.dia_fechamento),
+        diaVencimento: String(c.dia_vencimento),
+        limite: c.limite == null ? 0 : Number(c.limite),
+      },
+    });
+  }
+
+  /**
+   * O banco recusa apagar cartão que tenha gasto no crédito: o lançamento
+   * ficaria sem cartão e quebra a constraint. Conferimos antes para
+   * explicar em vez de mostrar o erro cru do Postgres.
+   */
+  async pedirExclusaoCartao() {
+    const id = this.state.selectedId;
+    if (!id) return;
+    try {
+      const n = await Casa.cartoes.contarLancamentos(id);
+      this.setState({ confirmandoExclusao: true, lancamentosDoCartao: n });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  async excluirCartao() {
+    const id = this.state.selectedId;
+    try {
+      await Casa.cartoes.excluir(id);
+      this.setState({ confirmandoExclusao: false, selectedId: null, detalhe: null });
+      if (this.state.editingId === id) this.fecharForm();
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message, confirmandoExclusao: false });
     }
   }
 
@@ -398,6 +465,8 @@ class Component extends DCLogic {
       isDesktop: s.isDesktop,
       contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
       formOpen: s.formOpen,
+      formTitle: s.editingId ? 'Editar cartão' : 'Novo cartão',
+      saveLabel: s.editingId ? 'Salvar alterações' : 'Salvar cartão',
       toggleLabel: s.formOpen ? 'Fechar' : 'Novo cartão',
       toggleIcon: s.formOpen ? 'x' : 'plus',
       mesRef: s.mesRef,
@@ -406,7 +475,7 @@ class Component extends DCLogic {
         const c = this.state.cartoes.find(x => x.id === this.state.selectedId);
         if (c) this.carregarDetalhe(c);
       }),
-      onToggleForm: () => this.setState({ formOpen: !s.formOpen }),
+      onToggleForm: () => (s.formOpen ? this.fecharForm() : this.setState({ formOpen: true })),
       onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },
       form: f,
@@ -421,7 +490,20 @@ class Component extends DCLogic {
       onSave: () => this.save(),
       swatches,
       cartoes,
-      selected: s.detalhe,
+      selected: s.detalhe && Object.assign({}, s.detalhe, {
+        acoesMsg: s.confirmandoExclusao
+          ? (s.lancamentosDoCartao > 0
+              ? `Este cartão tem ${s.lancamentosDoCartao} lançamento(s). Exclua ou mova esses gastos em Saídas antes.`
+              : 'Excluir este cartão?')
+          : '',
+      }),
+      confirmandoExclusao: s.confirmandoExclusao,
+      podeExcluirCartao: s.lancamentosDoCartao === 0,
+      cancelarLabel: s.lancamentosDoCartao > 0 ? 'Entendi' : 'Cancelar',
+      onEditarCartao: () => this.editarCartao(),
+      onExcluirCartao: () => this.pedirExclusaoCartao(),
+      onConfirmarExclusaoCartao: () => this.excluirCartao(),
+      onCancelarExclusaoCartao: () => this.setState({ confirmandoExclusao: false }),
     };
   }
 }

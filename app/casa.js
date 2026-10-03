@@ -135,7 +135,16 @@
   }
 
   var membros = tabela('membros', { coluna: 'nome', crescente: true });
-  var cartoes = tabela('cartoes', { coluna: 'nome', crescente: true });
+  var cartoes = Object.assign(tabela('cartoes', { coluna: 'nome', crescente: true }), {
+    /** Lançamentos no crédito deste cartão: eles impedem a exclusão. */
+    async contarLancamentos(id) {
+      var r = await sb.from('saidas')
+        .select('id', { count: 'exact', head: true })
+        .eq('cartao_id', id);
+      if (r.error) throw new Error(r.error.message);
+      return r.count || 0;
+    },
+  });
 
   // ------------------------------------------------------ categorias
   var categorias = Object.assign(tabela('categorias', { coluna: 'nome', crescente: true }), {
@@ -167,8 +176,29 @@
     },
   });
 
+  /**
+   * Exclui dívida ou cofrinho junto com a categoria que o trigger criou.
+   * O id da categoria é lido ANTES: depois da exclusão o vínculo vira
+   * null e não dá mais para identificá-la. A categoria só some se
+   * ninguém lançou nela — havendo histórico, ela fica, senão o lançamento
+   * em Saídas perderia o nome.
+   */
+  async function excluirComCategoria(tabela, coluna, id) {
+    var cat = ok(await sb.from('categorias').select('id').eq(coluna, id).maybeSingle());
+    var apagado = ok(await sb.from(tabela).delete().eq('id', id).select());
+    if (cat) {
+      var usos = await sb.from('saidas')
+        .select('id', { count: 'exact', head: true })
+        .eq('categoria_id', cat.id);
+      if (!usos.count) await sb.from('categorias').delete().eq('id', cat.id);
+    }
+    return apagado;
+  }
+
   // --------------------------------------------------------- dívidas
   var dividas = Object.assign(tabela('dividas', { coluna: 'created_at', crescente: false }), {
+    excluir(id) { return excluirComCategoria('dividas', 'divida_id', id); },
+
     /** Pagamentos de uma dívida = saídas na categoria vinculada a ela. */
     async pagamentos(dividaId) {
       var cat = ok(await sb.from('categorias').select('id')
@@ -181,6 +211,17 @@
 
   // ------------------------------------------------------- cofrinhos
   var cofrinhos = Object.assign(tabela('cofrinhos', { coluna: 'created_at', crescente: false }), {
+    excluir(id) { return excluirComCategoria('cofrinhos', 'cofrinho_id', id); },
+
+    /** Quantos saques já saíram deste cofrinho (eles impedem a exclusão). */
+    async contarResgates(id) {
+      var r = await sb.from('entradas')
+        .select('id', { count: 'exact', head: true })
+        .eq('cofrinho_id', id).eq('tipo', 'resgate');
+      if (r.error) throw new Error(r.error.message);
+      return r.count || 0;
+    },
+
     /**
      * Saque: tira do cofrinho e registra a entrada "Resgate" de uma vez.
      * O banco recusa se o saldo não cobrir o valor.

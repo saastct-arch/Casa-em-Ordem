@@ -72,7 +72,7 @@
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="{{ toggleIcon }}" on-click="{{ onToggleForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
 
       <sc-if value="{{ formOpen }}" hint-placeholder-val="{{ false }}">
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Novo cofrinho" hint-size="100%,260px" style="gap:16px;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="{{ formTitle }}" hint-size="100%,260px" style="gap:16px;">
           <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.TextInput" label="Nome" value="{{ form.nome }}" on-change="{{ onNomeChange }}" placeholder="Ex.: Viagem de férias" hint-size="100%,68px"></x-import>
           <sc-if value="{{ !metaOpen }}" hint-placeholder-val="{{ true }}">
             <button type="button" onClick="{{ onOpenMeta }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px;border-radius:var(--radius-pill);background:transparent;border:1px dashed var(--border-strong);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;">+ Definir meta</button>
@@ -80,7 +80,7 @@
           <sc-if value="{{ metaOpen }}" hint-placeholder-val="{{ false }}">
             <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Meta (opcional)" value="{{ form.meta }}" on-change="{{ onMetaChange }}" hint-size="100%,68px"></x-import>
           </sc-if>
-          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSave }}" on-click="{{ onSave }}" hint-size="100%,52px">Criar cofrinho</x-import>
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSave }}" on-click="{{ onSave }}" hint-size="100%,52px">{{ saveLabel }}</x-import>
         </x-import>
       </sc-if>
 
@@ -91,8 +91,22 @@
               <span style="width:44px;height:44px;flex-shrink:0;border-radius:12px;background:var(--color-accent-soft);color:var(--gold-700);display:flex;align-items:center;justify-content:center;">
                 <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="piggy-bank" size="22" hint-size="22px,22px"></x-import>
               </span>
-              <span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--text-primary);">{{ g.nome }}</span>
+              <span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--text-primary);flex:1;min-width:0;">{{ g.nome }}</span>
+              <div style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="pencil" label="Editar" size="32" on-click="{{ g.onEdit }}" hint-size="32px,32px"></x-import>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="trash-2" label="Excluir" size="32" tone="danger" on-click="{{ g.onDelete }}" hint-size="32px,32px"></x-import>
+              </div>
             </div>
+
+            <sc-if value="{{ g.confirmingDelete }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0;">
+                <span style="font-size:13px;color:var(--text-secondary);margin-right:auto;">{{ g.deleteMsg }}</span>
+                <sc-if value="{{ g.podeExcluir }}" hint-placeholder-val="{{ true }}">
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="danger" size="sm" on-click="{{ g.onConfirmDelete }}" hint-size="auto,32px">Excluir</x-import>
+                </sc-if>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ g.onCancelDelete }}" hint-size="auto,32px">{{ g.cancelLabel }}</x-import>
+              </div>
+            </sc-if>
 
             <div style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:700;font-size:clamp(26px,6vw,34px);letter-spacing:-0.02em;color:var(--gold-700);">R$ {{ g.saldoFormatted }}</div>
 
@@ -173,6 +187,9 @@ class Component extends DCLogic {
     goals: [],
     historicos: {},
     formOpen: false, metaOpen: false,
+    editingId: null,
+    confirmDeleteId: null,
+    resgatesDoCofrinho: 0,
     form: { nome: '', meta: 0 },
     openActionId: null, actionType: null, actionValue: 0,
     openHistoricoId: null,
@@ -244,15 +261,55 @@ class Component extends DCLogic {
   async save() {
     const f = this.state.form;
     if (!f.nome) return;
+    const campos = {
+      nome: f.nome,
+      meta_valor: this.state.metaOpen && f.meta > 0 ? f.meta : null,
+    };
     try {
-      await Casa.cofrinhos.criar({
-        nome: f.nome,
-        meta_valor: this.state.metaOpen && f.meta > 0 ? f.meta : null,
-      });
-      this.setState({ formOpen: false, metaOpen: false, form: { nome: '', meta: 0 }, erro: '' });
+      if (this.state.editingId) await Casa.cofrinhos.atualizar(this.state.editingId, campos);
+      else await Casa.cofrinhos.criar(campos);
+      this.setState({ formOpen: false, metaOpen: false, editingId: null, form: { nome: '', meta: 0 }, erro: '' });
       await this.carregar();
     } catch (e) {
       this.setState({ erro: e.message });
+    }
+  }
+
+  editar(g) {
+    const meta = g.meta_valor == null ? 0 : Number(g.meta_valor);
+    this.setState({
+      editingId: g.id, formOpen: true, metaOpen: meta > 0, confirmDeleteId: null,
+      openActionId: null, openHistoricoId: null,
+      form: { nome: g.nome, meta: meta },
+    });
+  }
+
+  fecharForm() {
+    this.setState({ formOpen: false, metaOpen: false, editingId: null, form: { nome: '', meta: 0 } });
+  }
+
+  /**
+   * O banco recusa apagar cofrinho que já teve saque: a entrada "Resgate"
+   * ficaria sem cofrinho e quebra a constraint. Então checamos antes e
+   * explicamos, em vez de deixar vazar o erro cru do Postgres.
+   */
+  async pedirExclusao(g) {
+    try {
+      const n = await Casa.cofrinhos.contarResgates(g.id);
+      this.setState({ confirmDeleteId: g.id, resgatesDoCofrinho: n });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  async excluir(g) {
+    try {
+      await Casa.cofrinhos.excluir(g.id);
+      this.setState({ confirmDeleteId: null });
+      if (this.state.editingId === g.id) this.fecharForm();
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message, confirmDeleteId: null });
     }
   }
 
@@ -263,7 +320,19 @@ class Component extends DCLogic {
       const historicoOpen = s.openHistoricoId === g.id;
       const saldo = Number(g.saldo_atual);
       const meta = g.meta_valor == null ? null : Number(g.meta_valor);
+      const confirmando = s.confirmDeleteId === g.id;
+      const temResgate = confirmando && s.resgatesDoCofrinho > 0;
       return {
+        onEdit: () => this.editar(g),
+        onDelete: () => this.pedirExclusao(g),
+        confirmingDelete: confirmando,
+        podeExcluir: !temResgate,
+        cancelLabel: temResgate ? 'Entendi' : 'Cancelar',
+        deleteMsg: temResgate
+          ? `"${g.nome}" tem ${s.resgatesDoCofrinho} saque(s) lançados em Entradas. Exclua esses resgates antes.`
+          : `Excluir "${g.nome}"? O saldo guardado some junto.`,
+        onConfirmDelete: () => this.excluir(g),
+        onCancelDelete: () => this.setState({ confirmDeleteId: null }),
         nome: g.nome, saldo: saldo, meta: meta, hasMeta: !!meta,
         saldoFormatted: formatBRL(saldo),
         onRendimento: () => this.openAction(g.id, 'rendimento'),
@@ -293,9 +362,11 @@ class Component extends DCLogic {
       contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
       totalGeral: s.goals.reduce((sum, g) => sum + Number(g.saldo_atual), 0),
       formOpen: s.formOpen,
+      formTitle: s.editingId ? 'Editar cofrinho' : 'Novo cofrinho',
+      saveLabel: s.editingId ? 'Salvar alterações' : 'Criar cofrinho',
       toggleLabel: s.formOpen ? 'Fechar' : 'Novo cofrinho',
       toggleIcon: s.formOpen ? 'x' : 'plus',
-      onToggleForm: () => this.setState({ formOpen: !s.formOpen }),
+      onToggleForm: () => (s.formOpen ? this.fecharForm() : this.setState({ formOpen: true })),
       onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },
       form: s.form, metaOpen: s.metaOpen,
