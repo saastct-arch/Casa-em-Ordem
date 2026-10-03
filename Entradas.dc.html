@@ -34,6 +34,7 @@
 <meta name="twitter:description" content="O controle financeiro da família, em um lugar só.">
 <meta name="twitter:image" content="https://casa-em-ordem-psi.vercel.app/og-image.png">
 
+<script src="./app/guard.js"></script>
 <script src="./support.js"></script>
 <script src="./app/vendor/supabase.umd.js"></script>
 <script src="./app/casa.js"></script>
@@ -65,7 +66,7 @@
     <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
 
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Souza" title="Entradas" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;" hint-size="100%,60px"></x-import>
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Guimarães Silva" title="Entradas" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;" hint-size="100%,60px"></x-import>
         <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
       </div>
 

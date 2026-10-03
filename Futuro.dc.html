@@ -34,6 +34,7 @@
 <meta name="twitter:description" content="O controle financeiro da família, em um lugar só.">
 <meta name="twitter:image" content="https://casa-em-ordem-psi.vercel.app/og-image.png">
 
+<script src="./app/guard.js"></script>
 <script src="./support.js"></script>
 <script src="./app/vendor/supabase.umd.js"></script>
 <script src="./app/casa.js"></script>
@@ -63,7 +64,7 @@
   <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
     <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
 
-      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Souza" title="Futuro" month="9" year="2026" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Guimarães Silva" title="Futuro" month="9" year="2026" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="accent" icon="piggy-bank" label="Total guardado" value="{{ totalGeral }}" hint-size="100%,130px"></x-import>
 

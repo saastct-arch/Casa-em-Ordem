@@ -34,6 +34,7 @@
 <meta name="twitter:description" content="O controle financeiro da família, em um lugar só.">
 <meta name="twitter:image" content="https://casa-em-ordem-psi.vercel.app/og-image.png">
 
+<script src="./app/guard.js"></script>
 <script src="./support.js"></script>
 <script src="./app/vendor/supabase.umd.js"></script>
 <script src="./app/casa.js"></script>
@@ -64,14 +65,14 @@
     <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:20px;">
 
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Souza" title="Resumo" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;"
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Guimarães Silva" title="Resumo" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;"
           hint-size="100%,60px"></x-import>
         <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
       </div>
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" hint-size="100%,180px" style="gap:18px;">
         <div style="display:flex;flex-direction:column;gap:4px;">
-          <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">Olá, família Souza</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">Olá, família Guimarães Silva</span>
           <div style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:700;font-size:clamp(32px,6vw,44px);letter-spacing:-0.025em;color:var(--text-primary);line-height:1.05;">
             R$ {{ saldoFormatted }}
           </div>

@@ -26,6 +26,26 @@ tentativas.
 Para trocar o PIN, defina o secret `FAMILY_PIN` no projeto Supabase
 (Settings → Edge Functions → Secrets). Sem o secret, o padrão é `0557`.
 
+### A trava das telas internas
+
+Toda tela que não seja o login carrega `app/guard.js` no `<head>`, **antes
+do `support.js`**. Ele é síncrono e não depende de nada: só olha se existe
+sessão guardada e, se não houver, manda para o login antes mesmo de o React
+ser pedido.
+
+Essa ordem importa. A verificação antes vivia dentro do `componentDidMount`,
+ou seja, dependia do React montar — com o CDN fora do ar, nada redirecionava
+e a tela protegida ficava aberta.
+
+São três camadas, da mais fraca para a mais forte:
+
+1. `guard.js` — barra na hora, sem rede. É só a porta: dá para burlar no
+   console do navegador.
+2. `exigirSessao()` — pergunta ao Supabase se a sessão vale de verdade, e
+   `onAuthStateChange` devolve ao login se ela cair no meio do uso.
+3. **RLS** — a de verdade. Sem sessão válida o banco não devolve uma linha,
+   por mais que se mexa no navegador.
+
 ## Automações
 
 Todas moram no banco, em triggers e funções — nunca no cliente. Por isso
@@ -157,6 +177,9 @@ Para regerar os PNG depois de mexer nos SVG, rasterize `brand/*.svg` e
   "só esta / esta e futuras" não aparece, porque não se aplica.
 - **Sair da conta** não existe na interface: o design não tem esse botão.
   A sessão fica no navegador e se renova sozinha.
+- O **nome da família** está escrito nas telas (`eyebrow` do AppHeader).
+  Se quiser trocar sem mexer no código, dá para guardá-lo no banco e
+  editá-lo em Configurações.
 
 ## Migrations
 

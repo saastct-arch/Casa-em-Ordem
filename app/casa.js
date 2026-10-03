@@ -73,6 +73,16 @@
     },
   };
 
+  // Sessão caiu no meio do uso (expirou, outro aparelho saiu, refresh
+  // falhou): volta ao login na hora, sem esperar a próxima ação.
+  sb.auth.onAuthStateChange(function (evento, sessao) {
+    if (evento !== 'SIGNED_OUT' && sessao) return;
+    if (evento !== 'SIGNED_OUT' && evento !== 'TOKEN_REFRESH_FAILED') return;
+    var pagina = location.pathname.split('/').pop();
+    if (pagina === 'index.html' || pagina === '' || pagina === '/') return;
+    location.replace('index.html');
+  });
+
   // ---------------------------------------------------------- período
   /**
    * Converte o payload do PeriodFilter em intervalo de datas.
