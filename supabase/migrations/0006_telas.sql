@@ -101,3 +101,10 @@ insert into categorias (nome, tipo, slug) values
   ('Salário', 'entrada', 'salario'),
   ('Extra',   'entrada', 'extra')
 on conflict (nome, tipo) do nothing;
+
+-- O Postgres concede EXECUTE a PUBLIC em toda função nova, então cada
+-- função criada depois do 0004 reabre a brecha. Funções de trigger não
+-- precisam de EXECUTE para disparar.
+revoke execute on function trg_divida_categoria()    from public, anon, authenticated;
+revoke execute on function trg_cofrinho_categoria()  from public, anon, authenticated;
+revoke execute on function trg_cofrinho_rendimento() from public, anon, authenticated;
