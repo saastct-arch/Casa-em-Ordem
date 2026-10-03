@@ -9,9 +9,10 @@
 <link rel="canonical" href="https://casa-em-ordem-psi.vercel.app/Faturas.dc.html">
 
 <!-- marca e compartilhamento -->
-<link rel="icon" href="/favicon.ico" sizes="48x48">
-<link rel="icon" href="/icon.svg" type="image/svg+xml" sizes="any">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/icon.svg?v=2" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico?v=2" sizes="16x16 32x32 48x48">
+<link rel="shortcut icon" href="/favicon.ico?v=2">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="apple-mobile-web-app-title" content="Casa em Ordem">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -64,7 +65,7 @@
   <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
     <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
 
-      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Guimarães Silva" title="Faturas" month="9" year="2026" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Guimarães Silva" title="Faturas" month="{{ mesRef }}" year="{{ anoRef }}" on-period-change="{{ onPeriodoChange }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="{{ toggleIcon }}" on-click="{{ onToggleForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
 
@@ -125,7 +126,7 @@
 
       <sc-if value="{{ selected }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:16px;">
-          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="primary" icon="receipt-text" label="Fatura atual — {{ selected.nome }}" value="{{ selected.faturaAtual }}" footer="{{ selected.footer }}" hint-size="100%,150px"></x-import>
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="primary" icon="receipt-text" label="{{ selected.rotulo }}" value="{{ selected.faturaAtual }}" footer="{{ selected.footer }}" hint-size="100%,150px"></x-import>
 
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;">
             <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Maiores gastos por categoria" hint-size="100%,220px">
@@ -208,16 +209,12 @@ function iso(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 /**
- * Fatura que recebe uma compra feita hoje. Mesma regra do banco
- * (fatura_competencia): comprou até o dia do fechamento, entra na fatura
- * que fecha neste mês; depois disso, na próxima.
+ * Fatura do cartão que fecha no mês escolhido. O seletor do cabeçalho
+ * aponta um mês, e "Outubro 2026" é a fatura que fecha em outubro —
+ * leitura mais direta do que o ciclo em que uma compra de hoje cairia.
  */
-function competenciaAtual(diaFechamento) {
-  const hoje = new Date();
-  if (hoje.getDate() <= diaFechamento) {
-    return iso(diaSeguro(hoje.getFullYear(), hoje.getMonth(), diaFechamento));
-  }
-  return iso(diaSeguro(hoje.getFullYear(), hoje.getMonth() + 1, diaFechamento));
+function competenciaDoMes(ano, mes, diaFechamento) {
+  return iso(diaSeguro(ano, mes, diaFechamento));
 }
 function mesLabelDeISO(s) {
   const [y, m] = s.split('-').map(Number);
@@ -246,6 +243,8 @@ class Component extends DCLogic {
     cartoes: [],
     detalhe: null,
     selectedId: null,
+    mesRef: new Date().getMonth(),
+    anoRef: new Date().getFullYear(),
     formOpen: false,
     erro: '',
     form: { nome: '', bandeira: 'visa', cor: SWATCHES[0].hex, diaFechamento: '10', diaVencimento: '17', limite: 0 },
@@ -281,7 +280,7 @@ class Component extends DCLogic {
   async carregarDetalhe(cartao) {
     if (!cartao) { this.setState({ detalhe: null }); return; }
     try {
-      const comp = competenciaAtual(cartao.dia_fechamento);
+      const comp = competenciaDoMes(this.state.anoRef, this.state.mesRef, cartao.dia_fechamento);
       const [gastos, todasFaturas, futuras] = await Promise.all([
         Casa.faturas.lancamentos(cartao.id, comp),
         Casa.faturas.listar(cartao.id),
@@ -322,6 +321,7 @@ class Component extends DCLogic {
       this.setState({
         detalhe: {
           nome: cartao.nome,
+          rotulo: `Fatura de ${mesLabelDeISO(comp)} — ${cartao.nome}`,
           faturaAtual: soma(gastos),
           footer: `Fecha dia ${cartao.dia_fechamento} · vence dia ${cartao.dia_vencimento}`,
           porCategoria: agrupar(g => g.categorias && g.categorias.nome, 'var(--color-primary)'),
@@ -400,6 +400,12 @@ class Component extends DCLogic {
       formOpen: s.formOpen,
       toggleLabel: s.formOpen ? 'Fechar' : 'Novo cartão',
       toggleIcon: s.formOpen ? 'x' : 'plus',
+      mesRef: s.mesRef,
+      anoRef: s.anoRef,
+      onPeriodoChange: (p) => this.setState({ mesRef: p.month, anoRef: p.year }, () => {
+        const c = this.state.cartoes.find(x => x.id === this.state.selectedId);
+        if (c) this.carregarDetalhe(c);
+      }),
       onToggleForm: () => this.setState({ formOpen: !s.formOpen }),
       onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },

@@ -1,7 +1,7 @@
 :root{
---font-display:'Manrope',ui-sans-serif,system-ui,sans-serif;
---font-body:'IBM Plex Sans',ui-sans-serif,system-ui,sans-serif;
---font-numeric:'IBM Plex Sans',ui-sans-serif,system-ui,sans-serif;
+--font-display:'Fraunces',Georgia,'Times New Roman',serif;
+--font-body:'Source Sans 3',ui-sans-serif,system-ui,sans-serif;
+--font-numeric:'Source Sans 3',ui-sans-serif,system-ui,sans-serif;
 
 --fw-regular:400; /* @kind font */
 --fw-medium:500; /* @kind font */

@@ -146,6 +146,21 @@ de saída, criada por trigger. Lançar uma saída nela abate a dívida ou
 engorda o cofrinho. Categoria criada pela família fica sem slug e aparece
 com o estilo neutro, igual ao protótipo.
 
+## Tipografia
+
+**Fraunces** nos títulos e na marca, **Source Sans 3** no texto, na
+interface e em todos os números. As duas são variáveis, auto-hospedadas
+(subset latino, OFL) e ficam em `_ds/.../assets/fonts/`.
+
+Source Sans 3 foi escolhida pelos algarismos tabulares de verdade: é isso
+que mantém os valores em R$ alinhados coluna a coluna (`--num-features:
+"tnum" 1, "lnum" 1`). Uma fonte sem `tnum` faria os números dançarem a
+cada centavo.
+
+Trocar de fonte é só mexer em `tokens/fonts.css` e `tokens/typography.css`
+— o resto do design system usa `var(--font-display)` e `var(--font-body)`,
+nunca o nome da família direto.
+
 ## Marca e compartilhamento
 
 A marca é a casinha do próprio design system (ícone `house`, lucide/ISC)
@@ -169,6 +184,17 @@ compartilhamento, onde há espaço.
 
 Para regerar os PNG depois de mexer nos SVG, rasterize `brand/*.svg` e
 `brand/og.html` nos tamanhos da tabela.
+
+## Seletor de mês por tela
+
+| Tela | Seletor | Por quê |
+|---|---|---|
+| Resumo, Entradas, Saídas | filtro completo (mês, ano, intervalo) | são lançamentos, que vivem num período |
+| Faturas | seletor de mês | escolhe **qual fatura** olhar: "Outubro 2026" é a que fecha em outubro |
+| Dívidas, Futuro | nenhum | saldo devedor e cofrinho são estado de hoje, não recorte de mês |
+
+Antes dessas três últimas telas mostravam um seletor preso em "Outubro
+2026" sem `onPeriodChange` — as setas não faziam nada.
 
 ## Pontos em aberto
 

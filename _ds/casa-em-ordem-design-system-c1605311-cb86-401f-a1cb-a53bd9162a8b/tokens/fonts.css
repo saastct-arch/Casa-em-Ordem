@@ -1,4 +1,6 @@
-/* Self-hosted variable webfonts (latin subset, Google Fonts, OFL).
-   Manrope → display/headings. IBM Plex Sans → body, UI and all monetary numbers. */
-@font-face{font-family:'Manrope';font-style:normal;font-weight:500 800;font-display:swap;src:url('../assets/fonts/Manrope-Variable.woff2') format('woff2');}
-@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:400 700;font-display:swap;src:url('../assets/fonts/IBMPlexSans-Variable.woff2') format('woff2');}
+/* Webfonts variáveis auto-hospedadas (subset latino, Google Fonts, OFL).
+   Fraunces → títulos e a marca. Source Sans 3 → texto, interface e todos
+   os números. Source Sans 3 tem algarismos tabulares de verdade, que é o
+   que mantém os valores em R$ alinhados coluna a coluna. */
+@font-face{font-family:'Fraunces';font-style:normal;font-weight:400 900;font-display:swap;src:url('../assets/fonts/Fraunces-Variable.woff2') format('woff2');}
+@font-face{font-family:'Source Sans 3';font-style:normal;font-weight:400 700;font-display:swap;src:url('../assets/fonts/SourceSans3-Variable.woff2') format('woff2');}

@@ -9,9 +9,10 @@
 <link rel="canonical" href="https://casa-em-ordem-psi.vercel.app/Resumo.dc.html">
 
 <!-- marca e compartilhamento -->
-<link rel="icon" href="/favicon.ico" sizes="48x48">
-<link rel="icon" href="/icon.svg" type="image/svg+xml" sizes="any">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/icon.svg?v=2" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico?v=2" sizes="16x16 32x32 48x48">
+<link rel="shortcut icon" href="/favicon.ico?v=2">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="apple-mobile-web-app-title" content="Casa em Ordem">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -289,10 +290,16 @@ class Component extends DCLogic {
     const catList = Object.keys(porCat).map(k => porCat[k]).sort((a, b) => b.value - a.value);
     const catTotal = catList.reduce((t, c) => t + c.value, 0);
 
+    // As cores de slug vêm primeiro; o que sobra do ciclo vai para as
+    // categorias sem slug. Sem tirar as já usadas, duas fatias saíam da
+    // mesma cor (ex.: "Casa" e uma categoria nova).
+    const usadas = new Set(catList.map(c => c.slug && CAT_CORES[c.slug]).filter(Boolean));
+    const livres = CICLO_CORES.filter(cor => !usadas.has(cor));
     let acc = 0;
     let iCor = 0;
     const categories = catList.map(c => {
-      const cor = c.slug && CAT_CORES[c.slug] ? CAT_CORES[c.slug] : CICLO_CORES[iCor++ % CICLO_CORES.length];
+      const cor = (c.slug && CAT_CORES[c.slug])
+        || (livres.length ? livres[iCor++ % livres.length] : CICLO_CORES[iCor++ % CICLO_CORES.length]);
       const pct = catTotal > 0 ? (c.value / catTotal) * 100 : 0;
       acc += pct;
       return { label: c.label, color: cor, formatted: 'R$ ' + formatBRL(c.value), pctEnd: acc };
@@ -321,11 +328,15 @@ class Component extends DCLogic {
       };
     });
 
-    const goals = s.cofrinhos.map(c => ({
-      label: c.nome,
-      current: Number(c.saldo_atual),
-      target: c.meta_valor == null ? null : Number(c.meta_valor),
-    }));
+    // Só entra na barra quem tem meta: sem meta não há progresso a mostrar,
+    // e o ProgressBar devolvia NaN%. O total guardado continua somando todos.
+    const goals = s.cofrinhos
+      .filter(c => c.meta_valor != null && Number(c.meta_valor) > 0)
+      .map(c => ({
+        label: c.nome,
+        current: Number(c.saldo_atual),
+        target: Number(c.meta_valor),
+      }));
 
     // faturas que ainda vão vencer, da mais próxima para a mais distante
     const hojeISO = iso(new Date());
