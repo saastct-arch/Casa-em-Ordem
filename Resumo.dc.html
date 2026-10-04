@@ -72,12 +72,19 @@
           hint-size="100%,60px"></x-import>
         <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
       </div>
+      <sc-if value="{{ erro }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-control);background:var(--color-alert-soft);color:var(--color-alert);font-size:14px;font-weight:600;">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="triangle-alert" size="18" hint-size="18px,18px"></x-import>
+          {{ erro }}
+        </div>
+      </sc-if>
+
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" hint-size="100%,180px" style="gap:18px;">
         <div style="display:flex;flex-direction:column;gap:4px;">
           <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">Olá, {{ casaNome }}</span>
-          <div style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:700;font-size:clamp(32px,6vw,44px);letter-spacing:-0.025em;color:var(--text-primary);line-height:1.05;">
-            R$ {{ saldoFormatted }}
+          <div style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:700;font-size:clamp(32px,6vw,44px);letter-spacing:-0.025em;color:{{ saldoCor }};line-height:1.05;">
+            {{ saldoTexto }}
           </div>
           <span style="font-size:13px;color:var(--text-secondary);">{{ saldoLegenda }}</span>
           <sc-if value="{{ temBeneficio }}" hint-placeholder-val="{{ false }}">
@@ -406,12 +413,17 @@ class Component extends DCLogic {
       period: s.period,
       onPeriodChange: (next) => this.setState({ period: next }, () => this.carregar()),
       menuAberto: this.state.menuAberto,
+      erro: this.state.erro,
       onAbrirMenu: () => this.setState({ menuAberto: true }),
       onFecharMenu: () => this.setState({ menuAberto: false }),
       onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },
       saldoFormatted: formatBRL(saldo),
-      saldoLegenda: 'Saldo disponível · ' + (s.period.label || ''),
+      // formatBRL usa Math.abs, então o sinal precisa vir à parte: sem isso
+      // um saldo de -500 aparecia como R$ 500,00, igualzinho a um positivo.
+      saldoTexto: (saldo < 0 ? '- R$ ' : 'R$ ') + formatBRL(saldo),
+      saldoCor: saldo < 0 ? 'var(--color-alert)' : 'var(--text-primary)',
+      saldoLegenda: (saldo < 0 ? 'Saldo negativo · ' : 'Saldo disponível · ') + (s.period.label || ''),
       // O saldo acima soma tudo que entrou e saiu, benefício incluído. Mas
       // vale só compra comida, então o que está parado no cartão aparece
       // em separado: senão o número da frente promete um dinheiro que não

@@ -336,6 +336,20 @@
 
   // ---------------------------------------------------------- saídas
   var saidas = Object.assign(tabela('saidas', { coluna: 'data', crescente: false }), {
+    /**
+     * Boletos de um intervalo de vencimento. Consulta a tabela `saidas`, e é
+     * daqui que Resumo e Faturas a chamam — estava em `faturas` por engano, e
+     * `Casa.saidas.boletos` indefinido derrubava o carregamento das duas telas.
+     */
+    async boletos(de, ate) {
+      var q = sb.from('saidas')
+        .select('*, categorias(nome, slug), membros(nome)')
+        .eq('forma_pagamento', 'boleto');
+      if (de) q = q.gte('vencimento', de);
+      if (ate) q = q.lte('vencimento', ate);
+      return ok(await q.order('vencimento'));
+    },
+
     async doPeriodo(p) {
       var r = periodoRange(p);
       return ok(await sb.from('saidas')
@@ -409,19 +423,6 @@
         .select('*, categorias(nome, slug), membros(nome)')
         .eq('cartao_id', cartaoId).eq('competencia', fechamento)
         .order('data'));
-    },
-
-    /**
-     * Boletos de um intervalo de vencimento. Ficam na tela de Faturas
-     * junto dos cartões porque a pergunta é a mesma: o que tenho a pagar.
-     */
-    async boletos(de, ate) {
-      var q = sb.from('saidas')
-        .select('*, categorias(nome, slug), membros(nome)')
-        .eq('forma_pagamento', 'boleto');
-      if (de) q = q.gte('vencimento', de);
-      if (ate) q = q.lte('vencimento', ate);
-      return ok(await q.order('vencimento'));
     },
 
     /** Parcelas que ainda vão cair em faturas futuras deste cartão. */

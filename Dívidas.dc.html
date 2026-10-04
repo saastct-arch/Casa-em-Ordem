@@ -70,6 +70,13 @@
         <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MenuButton" on-click="{{ onAbrirMenu }}" hint-size="40px,40px"></x-import></sc-if>
         <x-import style="flex:1;" component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="{{ casaNome }}" title="Dívidas" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
       </div>
+      <sc-if value="{{ erro }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-control);background:var(--color-alert-soft);color:var(--color-alert);font-size:14px;font-weight:600;">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="triangle-alert" size="18" hint-size="18px,18px"></x-import>
+          {{ erro }}
+        </div>
+      </sc-if>
+
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="alert" icon="hand-coins" label="Saldo devedor total" value="{{ saldoTotal }}" hint-size="100%,130px"></x-import>
 
@@ -453,6 +460,7 @@ class Component extends DCLogic {
       toggleIcon: 'plus',
       onToggleForm: () => this.setState({ formOpen: true }),
       menuAberto: this.state.menuAberto,
+      erro: this.state.erro,
       onAbrirMenu: () => this.setState({ menuAberto: true }),
       onFecharMenu: () => this.setState({ menuAberto: false }),
       onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },

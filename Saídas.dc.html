@@ -72,6 +72,13 @@
         <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="{{ casaNome }}" title="Saídas" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;" hint-size="100%,60px"></x-import>
         <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
       </div>
+      <sc-if value="{{ erro }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-control);background:var(--color-alert-soft);color:var(--color-alert);font-size:14px;font-weight:600;">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="triangle-alert" size="18" hint-size="18px,18px"></x-import>
+          {{ erro }}
+        </div>
+      </sc-if>
+
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="primary" icon="arrow-up-right" label="Total do mês" value="{{ totalMes }}" hint-size="100%,130px"></x-import>
 
@@ -434,13 +441,18 @@ class Component extends DCLogic {
         // Troca do número de parcelas: apaga o grupo e gera de novo, a
         // partir da data original da compra, para as parcelas caírem nas
         // faturas certas.
-        if (!f.cartao) throw new Error('Escolha um cartão.');
+        // Validar antes de apagar: o grupo antigo some aqui, então um erro
+        // depois da exclusão deixaria o usuário sem as parcelas.
+        if (f.forma === 'credito' && !f.cartao) throw new Error('Escolha um cartão.');
+        if (f.forma === 'boleto' && !f.vencimento) throw new Error('Informe o vencimento do boleto.');
         await Casa.saidas.excluirParcelas(par.parcela_grupo, 1, 'futuras');
-        await Casa.saidas.criarParcelada({
+        await Casa.saidas.criarParcelado({
           descricao: (this.catSelecionada() || {}).nome || 'Compra',
           valorTotal: f.valor,
-          cartaoId: f.cartao,
           numParcelas: parcelasNum,
+          forma: f.forma,
+          cartaoId: f.forma === 'credito' ? f.cartao : null,
+          vencimento: f.forma === 'boleto' ? f.vencimento : null,
           dataCompra: par.data_compra || f.data,
           categoriaId: f.category || null,
           membroId: f.membro || null,
@@ -676,6 +688,7 @@ class Component extends DCLogic {
       period: s.period,
       onPeriodChange: (next) => this.setState({ period: next }, () => this.carregar()),
       menuAberto: this.state.menuAberto,
+      erro: this.state.erro,
       onAbrirMenu: () => this.setState({ menuAberto: true }),
       onFecharMenu: () => this.setState({ menuAberto: false }),
       onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
