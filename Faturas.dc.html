@@ -66,9 +66,10 @@
   <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
     <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
 
-      <div style="display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MenuButton" on-click="{{ onAbrirMenu }}" hint-size="40px,40px"></x-import></sc-if>
-        <x-import style="flex:1;" component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="{{ casaNome }}" title="Faturas" month="{{ mesRef }}" year="{{ anoRef }}" on-period-change="{{ onPeriodoChange }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
+        <x-import style="flex:1;" component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="{{ casaNome }}" title="Faturas" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
+        <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
       </div>
       <sc-if value="{{ erro }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-control);background:var(--color-alert-soft);color:var(--color-alert);font-size:14px;font-weight:600;">
@@ -78,7 +79,37 @@
       </sc-if>
 
 
-      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="{{ toggleIcon }}" on-click="{{ onToggleForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="{{ totalTone }}" icon="receipt-text" label="{{ totalLabel }}" value="{{ totalMes }}" footer="{{ totalFooter }}" hint-size="100%,150px"></x-import>
+
+      <sc-if value="{{ temCartoes }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;gap:12px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x mandatory;">
+          <sc-for list="{{ cartoesVisuais }}" as="cv" hint-placeholder-count="2">
+            <button type="button" onClick="{{ cv.onSelect }}" aria-label="{{ cv.aria }}" style="{{ cv.style }}">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                <span style="{{ cv.bandeiraStyle }}">{{ cv.bandeiraLabel }}</span>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="wallet" size="20" color="{{ cv.tinta }}" hint-size="20px,20px"></x-import>
+              </div>
+              <span style="{{ cv.nomeStyle }}">{{ cv.nome }}</span>
+              <div style="display:flex;flex-direction:column;gap:2px;">
+                <span style="{{ cv.valorStyle }}">R$ {{ cv.totalFormatted }}</span>
+                <span style="{{ cv.metaStyle }}">{{ cv.meta }}</span>
+              </div>
+              <sc-if value="{{ cv.temLimite }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:5px;">
+                  <div style="{{ cv.trilhoStyle }}"><div style="{{ cv.barraStyle }}"></div></div>
+                  <span style="{{ cv.limiteStyle }}">{{ cv.limiteLabel }}</span>
+                </div>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- sem position:sticky: cadastrar cartão é ação rara, e a barra presa
+           cobria os botões de editar/excluir do primeiro grupo. -->
+      <div style="padding:2px 0;">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="{{ toggleIcon }}" on-click="{{ onToggleForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
+      </div>
 
       <sc-if value="{{ formOpen }}" hint-placeholder-val="{{ false }}">
         <div style="{{ overlayStyle }}" onClick="{{ onFecharForm }}">
@@ -127,111 +158,131 @@
         </div>
       </sc-if>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
-        <sc-for list="{{ cartoes }}" as="c" hint-placeholder-count="2">
-          <button type="button" onClick="{{ c.onSelect }}" style="{{ c.cardStyle }}">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-              <span style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85;">{{ c.bandeiraLabel }}</span>
-              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="wallet" size="22" color="{{ c.iconColor }}" hint-size="22px,22px"></x-import>
-            </div>
-            <span style="font-family:var(--font-display);font-weight:800;font-size:19px;letter-spacing:-0.01em;">{{ c.nome }}</span>
-            <div style="display:flex;justify-content:space-between;font-size:12px;opacity:0.9;">
-              <span>Fecha dia {{ c.diaFechamento }}</span>
-              <span>Vence dia {{ c.diaVencimento }}</span>
-            </div>
-          </button>
-        </sc-for>
-      </div>
-
-      <sc-if value="{{ selected }}" hint-placeholder-val="{{ false }}">
-        <div style="display:flex;flex-direction:column;gap:16px;">
-          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="primary" icon="receipt-text" label="{{ selected.rotulo }}" value="{{ selected.faturaAtual }}" footer="{{ selected.footer }}" hint-size="100%,150px"></x-import>
-
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span style="font-size:13px;color:var(--text-secondary);margin-right:auto;">{{ selected.acoesMsg }}</span>
-            <sc-if value="{{ !confirmandoExclusao }}" hint-placeholder-val="{{ true }}">
-              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="soft" size="sm" icon="pencil" on-click="{{ onEditarCartao }}" hint-size="auto,36px">Editar cartão</x-import>
-              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" icon="trash-2" on-click="{{ onExcluirCartao }}" hint-size="auto,36px">Excluir</x-import>
-            </sc-if>
-            <sc-if value="{{ confirmandoExclusao }}" hint-placeholder-val="{{ false }}">
-              <sc-if value="{{ podeExcluirCartao }}" hint-placeholder-val="{{ true }}">
-                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="danger" size="sm" on-click="{{ onConfirmarExclusaoCartao }}" hint-size="auto,36px">Excluir</x-import>
-              </sc-if>
-              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ onCancelarExclusaoCartao }}" hint-size="auto,36px">{{ cancelarLabel }}</x-import>
-            </sc-if>
-          </div>
-
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;">
-            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Maiores gastos por categoria" hint-size="100%,220px">
-              <sc-for list="{{ selected.porCategoria }}" as="pc" hint-placeholder-count="4">
-                <div style="display:flex;flex-direction:column;gap:4px;">
-                  <div style="display:flex;justify-content:space-between;font-size:13px;">
-                    <span style="color:var(--text-primary);font-weight:500;">{{ pc.label }}</span>
-                    <span style="font-family:var(--font-numeric);font-weight:600;color:var(--text-primary);">R$ {{ pc.valorFormatted }}</span>
-                  </div>
-                  <div style="height:7px;border-radius:var(--radius-pill);background:var(--cream-200);overflow:hidden;">
-                    <div style="{{ pc.barStyle }}"></div>
-                  </div>
-                </div>
-              </sc-for>
-            </x-import>
-
-            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Maiores gastos por membro" hint-size="100%,220px">
-              <sc-for list="{{ selected.porMembro }}" as="pm" hint-placeholder-count="2">
-                <div style="display:flex;flex-direction:column;gap:4px;">
-                  <div style="display:flex;justify-content:space-between;font-size:13px;">
-                    <span style="color:var(--text-primary);font-weight:500;">{{ pm.label }}</span>
-                    <span style="font-family:var(--font-numeric);font-weight:600;color:var(--text-primary);">R$ {{ pm.valorFormatted }}</span>
-                  </div>
-                  <div style="height:7px;border-radius:var(--radius-pill);background:var(--cream-200);overflow:hidden;">
-                    <div style="{{ pm.barStyle }}"></div>
-                  </div>
-                </div>
-              </sc-for>
-            </x-import>
-          </div>
-
-          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Comprometido nos próximos meses" subtitle="Parcelas em aberto neste cartão" hint-size="100%,160px">
-            <sc-for list="{{ selected.comprometido }}" as="cm" hint-placeholder-count="3">
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-default);">
-                <span style="font-size:14px;color:var(--text-primary);font-weight:500;">{{ cm.mesLabel }}</span>
-                <span style="font-size:13px;color:var(--text-secondary);">R$ {{ cm.valorFormatted }} em {{ cm.qtd }} parcelas ativas</span>
-              </div>
+      <sc-if value="{{ temFiltro }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-secondary);">Filtros</span>
+          <select class="ceo-select" value="{{ filtro }}" onChange="{{ onFiltroChange }}" style="height:var(--control-h-sm);padding:0 12px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:13px;color:var(--text-primary);outline:none;">
+            <option value="tudo">Mostrar: tudo</option>
+            <option value="cartoes">Só cartões</option>
+            <option value="boletos">Só boletos</option>
+            <sc-for list="{{ cartoesFiltro }}" as="cf" hint-placeholder-count="2">
+              <option value="{{ cf.id }}">{{ cf.nome }}</option>
             </sc-for>
-          </x-import>
-
-          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Histórico de faturas" subtitle="Fechadas anteriormente" hint-size="100%,160px">
-            <sc-for list="{{ selected.historicoFaturas }}" as="hf" hint-placeholder-count="3">
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-default);">
-                <span style="font-size:14px;color:var(--text-primary);font-weight:500;">{{ hf.mesLabel }}</span>
-                <span style="font-family:var(--font-numeric);font-weight:600;color:var(--text-primary);">R$ {{ hf.valorFormatted }}</span>
-              </div>
-            </sc-for>
-          </x-import>
+          </select>
         </div>
       </sc-if>
 
-      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="{{ boletoTone }}" icon="file-text" label="{{ boletoLabel }}" value="{{ boletoTotal }}" footer="{{ boletoFooter }}" hint-size="100%,150px"></x-import>
-
-      <sc-if value="{{ temBoletos }}" hint-placeholder-val="{{ true }}">
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Boletos do mês" subtitle="{{ boletoSubtitulo }}" padding="8" hint-size="100%,200px" style="gap:0;">
-          <sc-for list="{{ boletos }}" as="bo" hint-placeholder-count="3">
-            <div style="{{ bo.rowStyle }}">
-              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.CategoryChip" category="{{ bo.chipKey }}" label="{{ bo.categoria }}" size="sm" hint-size="auto,26px"></x-import>
-              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
-                <span style="font-size:15px;font-weight:600;color:var(--text-primary);">R$ {{ bo.valorFormatted }}</span>
-                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                  <span style="{{ bo.vencStyle }}">{{ bo.vencLabel }}</span>
-                  <sc-if value="{{ bo.isParcelado }}" hint-placeholder-val="{{ false }}">
-                    <span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:var(--radius-pill);background:var(--cream-200);color:var(--text-secondary);font-size:11px;font-weight:600;">{{ bo.parcelaTag }}</span>
-                  </sc-if>
-                </div>
-              </div>
-              <span style="font-size:13px;color:var(--text-secondary);">{{ bo.membro }}</span>
-            </div>
-          </sc-for>
-        </x-import>
+      <sc-if value="{{ vazio }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="receipt-text" title="{{ vazioTitulo }}" description="{{ vazioTexto }}" hint-size="100%,240px"></x-import>
       </sc-if>
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <sc-for list="{{ grupos }}" as="g" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <span style="{{ g.pontoStyle }}"></span>
+              <span style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-secondary);">{{ g.titulo }}</span>
+              <span style="{{ g.metaStyle }}">{{ g.meta }}</span>
+              <span style="margin-left:auto;font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-size:15px;font-weight:700;color:var(--text-primary);">R$ {{ g.totalFormatted }}</span>
+              <sc-if value="{{ g.ehCartao }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;gap:2px;">
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="pencil" label="Editar cartão" size="30" on-click="{{ g.onEditar }}" hint-size="30px,30px"></x-import>
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="trash-2" label="Excluir cartão" size="30" tone="danger" on-click="{{ g.onExcluir }}" hint-size="30px,30px"></x-import>
+                </div>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{ g.confirmando }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-radius:var(--radius-control);background:var(--color-alert-soft);">
+                <span style="font-size:13px;color:var(--color-alert);font-weight:600;margin-right:auto;">{{ g.msgExcluir }}</span>
+                <sc-if value="{{ g.podeExcluir }}" hint-placeholder-val="{{ true }}">
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="danger" size="sm" on-click="{{ g.onConfirmarExcluir }}" hint-size="auto,32px">Excluir</x-import>
+                </sc-if>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ g.onCancelarExcluir }}" hint-size="auto,32px">{{ g.cancelarLabel }}</x-import>
+              </div>
+            </sc-if>
+
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" padding="8" hint-size="100%,120px" style="gap:0;">
+              <sc-if value="{{ g.vazio }}" hint-placeholder-val="{{ false }}">
+                <span style="display:block;padding:14px 10px;font-size:13px;color:var(--text-secondary);">{{ g.vazioTexto }}</span>
+              </sc-if>
+              <sc-for list="{{ g.itens }}" as="it" hint-placeholder-count="3">
+                <div style="{{ it.rowStyle }}">
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.CategoryChip" category="{{ it.chipKey }}" label="{{ it.categoria }}" size="sm" hint-size="auto,26px"></x-import>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                    <span style="font-size:15px;font-weight:600;color:var(--text-primary);">R$ {{ it.valorFormatted }}</span>
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                      <span style="{{ it.dataStyle }}">{{ it.dataLabel }}</span>
+                      <sc-if value="{{ it.temTag }}" hint-placeholder-val="{{ false }}">
+                        <span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:var(--radius-pill);background:var(--cream-200);color:var(--text-secondary);font-size:11px;font-weight:600;">{{ it.tag }}</span>
+                      </sc-if>
+                    </div>
+                  </div>
+                  <span style="font-size:13px;color:var(--text-secondary);">{{ it.membro }}</span>
+                </div>
+              </sc-for>
+
+              <sc-if value="{{ g.ehCartao }}" hint-placeholder-val="{{ true }}">
+                <div style="padding:8px 2px 2px;">
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" full-width="{{ true }}" on-click="{{ g.onAnalise }}" hint-size="auto,36px">{{ g.rotuloAnalise }}</x-import>
+                </div>
+              </sc-if>
+            </x-import>
+
+            <sc-if value="{{ g.analiseAberta }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Maiores gastos por categoria" hint-size="100%,200px">
+                  <sc-for list="{{ g.analise.porCategoria }}" as="pc" hint-placeholder-count="4">
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                      <div style="display:flex;justify-content:space-between;font-size:13px;">
+                        <span style="color:var(--text-primary);font-weight:500;">{{ pc.label }}</span>
+                        <span style="font-family:var(--font-numeric);font-weight:600;color:var(--text-primary);">R$ {{ pc.valorFormatted }}</span>
+                      </div>
+                      <div style="height:7px;border-radius:var(--radius-pill);background:var(--cream-200);overflow:hidden;">
+                        <div style="{{ pc.barStyle }}"></div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </x-import>
+
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Maiores gastos por membro" hint-size="100%,200px">
+                  <sc-for list="{{ g.analise.porMembro }}" as="pm" hint-placeholder-count="2">
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                      <div style="display:flex;justify-content:space-between;font-size:13px;">
+                        <span style="color:var(--text-primary);font-weight:500;">{{ pm.label }}</span>
+                        <span style="font-family:var(--font-numeric);font-weight:600;color:var(--text-primary);">R$ {{ pm.valorFormatted }}</span>
+                      </div>
+                      <div style="height:7px;border-radius:var(--radius-pill);background:var(--cream-200);overflow:hidden;">
+                        <div style="{{ pm.barStyle }}"></div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </x-import>
+
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Comprometido à frente" subtitle="Parcelas em aberto neste cartão" hint-size="100%,160px">
+                  <sc-for list="{{ g.analise.comprometido }}" as="cm" hint-placeholder-count="3">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-default);">
+                      <span style="font-size:14px;color:var(--text-primary);font-weight:500;">{{ cm.mesLabel }}</span>
+                      <span style="font-size:13px;color:var(--text-secondary);">R$ {{ cm.valorFormatted }} em {{ cm.qtd }} parcelas</span>
+                    </div>
+                  </sc-for>
+                </x-import>
+
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Faturas anteriores" hint-size="100%,160px">
+                  <sc-for list="{{ g.analise.historico }}" as="hf" hint-placeholder-count="3">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-default);">
+                      <span style="font-size:14px;color:var(--text-primary);font-weight:500;">{{ hf.mesLabel }}</span>
+                      <span style="font-family:var(--font-numeric);font-weight:600;color:var(--text-primary);">R$ {{ hf.valorFormatted }}</span>
+                    </div>
+                  </sc-for>
+                </x-import>
+              </div>
+            </sc-if>
+
+          </div>
+        </sc-for>
+      </div>
 
     </div>
     <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
@@ -245,6 +296,7 @@ function formatBRL(n) {
   return Math.abs(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MESES_ABREV = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 const BANDEIRA_LABEL = { visa: 'Visa', mastercard: 'Mastercard', elo: 'Elo' };
 
 function isLightColor(hex) {
@@ -253,35 +305,25 @@ function isLightColor(hex) {
   const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
   return (0.299 * r + 0.587 * g + 0.114 * b) > 170;
 }
-
-function diaSeguro(ano, mes, dia) {
-  const ultimo = new Date(ano, mes + 1, 0).getDate();
-  return new Date(ano, mes, Math.min(dia, ultimo));
-}
 function iso(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
-/**
- * Fatura do cartão que fecha no mês escolhido. O seletor do cabeçalho
- * aponta um mês, e "Outubro 2026" é a fatura que fecha em outubro —
- * leitura mais direta do que o ciclo em que uma compra de hoje cairia.
- */
-function competenciaDoMes(ano, mes, diaFechamento) {
-  return iso(diaSeguro(ano, mes, diaFechamento));
-}
-function diasEntre(aISO, bISO) {
-  const [ay, am, ad] = aISO.split('-').map(Number);
-  const [by, bm, bd] = bISO.split('-').map(Number);
-  return Math.round((new Date(by, bm - 1, bd) - new Date(ay, am - 1, ad)) / 86400000);
-}
-function diaMesCurto(isoData) {
-  const MESES_ABREV = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-  const [y, m, d] = isoData.split('-').map(Number);
+function diaMesCurto(s) {
+  if (!s) return '';
+  const [y, m, d] = s.split('-').map(Number);
   return String(d).padStart(2, '0') + ' ' + MESES_ABREV[m - 1];
 }
 function mesLabelDeISO(s) {
   const [y, m] = s.split('-').map(Number);
   return MESES[m - 1] + ' ' + y;
+}
+function hojeISO() {
+  const d = new Date();
+  return iso(d);
+}
+function mesAtualPeriod() {
+  const d = new Date();
+  return { mode: 'mes', month: d.getMonth(), year: d.getFullYear(), label: MESES[d.getMonth()] + ' ' + d.getFullYear() };
 }
 
 const SWATCHES = [
@@ -304,15 +346,17 @@ class Component extends DCLogic {
   state = {
     isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
     menuAberto: false,
+    period: mesAtualPeriod(),
     cartoes: [],
     boletos: [],
-    detalhe: null,
-    selectedId: null,
-    mesRef: new Date().getMonth(),
-    anoRef: new Date().getFullYear(),
+    porCartao: {},        // id -> { total, ciclos, itens }
+    todasFaturas: [],
+    filtro: 'tudo',
+    analiseId: null,
+    analises: {},         // id -> { porCategoria, porMembro, comprometido, historico }
     formOpen: false,
     editingId: null,
-    confirmandoExclusao: false,
+    confirmandoId: null,
     lancamentosDoCartao: 0,
     casaNome: '',
     erro: '',
@@ -333,84 +377,92 @@ class Component extends DCLogic {
   async carregar() {
     if (!(await Casa.auth.exigirSessao())) return;
     try {
-      // Qual casa está logada: o PIN do login decide, e o cabeçalho mostra.
       if (!this.state.casaNome) {
         const casa = await Casa.casaAtual();
         this.setState({ casaNome: casa.nome });
       }
-      const primeiro = iso(new Date(this.state.anoRef, this.state.mesRef, 1));
-      const ultimo = iso(new Date(this.state.anoRef, this.state.mesRef + 1, 0));
-      const [cartoes, boletos] = await Promise.all([
+      const r = Casa.periodoRange(this.state.period);
+      const [cartoes, todasFaturas, boletos] = await Promise.all([
         Casa.cartoes.listar(),
-        Casa.saidas.boletos(primeiro, ultimo),
+        Casa.faturas.listar(),
+        Casa.saidas.boletos(r.de, r.ate),
       ]);
-      this.setState({ boletos });
-      const selectedId = this.state.selectedId && cartoes.some(c => c.id === this.state.selectedId)
-        ? this.state.selectedId
-        : (cartoes[0] ? cartoes[0].id : null);
-      this.setState({ cartoes, selectedId, erro: '' });
-      if (selectedId) this.carregarDetalhe(cartoes.find(c => c.id === selectedId));
-      else this.setState({ detalhe: null });
+
+      // "Outubro" é a fatura que FECHA em outubro — leitura mais direta do
+      // que o ciclo em que uma compra de hoje cairia. O vencimento aparece
+      // no cabeçalho de cada grupo, para não restar dúvida.
+      const noPeriodo = todasFaturas.filter(f => f.fechamento >= r.de && f.fechamento <= r.ate);
+      const lancamentos = await Promise.all(
+        noPeriodo.map(f => Casa.faturas.lancamentos(f.cartao_id, f.fechamento))
+      );
+
+      const porCartao = {};
+      noPeriodo.forEach((f, i) => {
+        const g = porCartao[f.cartao_id] || (porCartao[f.cartao_id] = { total: 0, ciclos: [], itens: [] });
+        g.total += Number(f.total);
+        g.ciclos.push(f);
+        g.itens = g.itens.concat(lancamentos[i] || []);
+      });
+
+      this.setState({ cartoes, todasFaturas, boletos, porCartao, erro: '' });
+      if (this.state.analiseId) this.montarAnalise(this.state.analiseId);
     } catch (e) {
       this.setState({ erro: e.message });
     }
   }
 
-  /** Monta a fatura do ciclo atual, o histórico e o que já está comprometido. */
-  async carregarDetalhe(cartao) {
-    if (!cartao) { this.setState({ detalhe: null }); return; }
+  /** Análise de um cartão: sai dos lançamentos já carregados, só as parcelas
+   *  futuras precisam de consulta. */
+  async montarAnalise(cartaoId) {
+    const g = this.state.porCartao[cartaoId];
+    const itens = (g && g.itens) || [];
     try {
-      const comp = competenciaDoMes(this.state.anoRef, this.state.mesRef, cartao.dia_fechamento);
-      const [gastos, todasFaturas, futuras] = await Promise.all([
-        Casa.faturas.lancamentos(cartao.id, comp),
-        Casa.faturas.listar(cartao.id),
-        Casa.faturas.comprometidoFuturo(cartao.id, comp),
-      ]);
+      const ciclos = (g && g.ciclos) || [];
+      const ultimo = ciclos.length
+        ? ciclos.map(c => c.fechamento).sort().slice(-1)[0]
+        : hojeISO();
+      const futuras = await Casa.faturas.comprometidoFuturo(cartaoId, ultimo);
 
-      const soma = (lista) => lista.reduce((t, g) => t + Number(g.valor), 0);
-
-      function agrupar(chave, cor) {
+      const agrupar = (chave, cor) => {
         const mapa = {};
-        gastos.forEach(g => {
-          const k = chave(g) || '—';
-          mapa[k] = (mapa[k] || 0) + Number(g.valor);
+        itens.forEach(x => {
+          const k = chave(x) || '—';
+          mapa[k] = (mapa[k] || 0) + Number(x.valor);
         });
-        const lista = Object.keys(mapa)
-          .map(k => ({ label: k, valor: mapa[k] }))
-          .sort((a, b) => b.valor - a.valor);
+        const lista = Object.keys(mapa).map(k => ({ label: k, valor: mapa[k] }))
+          .sort((a, b) => b.valor - a.valor).slice(0, 6);
         const max = Math.max.apply(null, lista.map(x => x.valor).concat([1]));
         return lista.map(x => ({
           label: x.label, valorFormatted: formatBRL(x.valor),
           barStyle: { width: ((x.valor / max) * 100) + '%', height: '100%', borderRadius: 'var(--radius-pill)', background: cor },
         }));
-      }
+      };
 
-      const porCompetencia = {};
-      futuras.forEach(p => {
+      const porComp = {};
+      (futuras || []).forEach(p => {
         const k = p.competencia;
-        porCompetencia[k] = porCompetencia[k] || { valor: 0, qtd: 0 };
-        porCompetencia[k].valor += Number(p.valor);
-        porCompetencia[k].qtd += 1;
+        porComp[k] = porComp[k] || { valor: 0, qtd: 0 };
+        porComp[k].valor += Number(p.valor);
+        porComp[k].qtd += 1;
       });
-      const comprometido = Object.keys(porCompetencia).sort().slice(0, 6).map(k => ({
-        mesLabel: mesLabelDeISO(k),
-        valorFormatted: formatBRL(porCompetencia[k].valor),
-        qtd: porCompetencia[k].qtd,
-      }));
 
       this.setState({
-        detalhe: {
-          nome: cartao.nome,
-          rotulo: `Fatura de ${mesLabelDeISO(comp)} — ${cartao.nome}`,
-          faturaAtual: soma(gastos),
-          footer: `Fecha dia ${cartao.dia_fechamento} · vence dia ${cartao.dia_vencimento}`,
-          porCategoria: agrupar(g => g.categorias && g.categorias.nome, 'var(--color-primary)'),
-          porMembro: agrupar(g => g.membros && g.membros.nome, 'var(--gold-600)'),
-          comprometido,
-          historicoFaturas: todasFaturas
-            .filter(fa => fa.fechamento < comp)
-            .slice(0, 6)
-            .map(fa => ({ mesLabel: mesLabelDeISO(fa.fechamento), valorFormatted: formatBRL(Number(fa.total)) })),
+        analises: {
+          ...this.state.analises,
+          [cartaoId]: {
+            porCategoria: agrupar(x => x.categorias && x.categorias.nome, 'var(--color-primary)'),
+            porMembro: agrupar(x => x.membros && x.membros.nome, 'var(--gold-600)'),
+            comprometido: Object.keys(porComp).sort().slice(0, 6).map(k => ({
+              mesLabel: mesLabelDeISO(k),
+              valorFormatted: formatBRL(porComp[k].valor),
+              qtd: porComp[k].qtd,
+            })),
+            historico: this.state.todasFaturas
+              .filter(fa => fa.cartao_id === cartaoId && fa.fechamento < ultimo)
+              .sort((a, b) => b.fechamento.localeCompare(a.fechamento))
+              .slice(0, 6)
+              .map(fa => ({ mesLabel: mesLabelDeISO(fa.fechamento), valorFormatted: formatBRL(Number(fa.total)) })),
+          },
         },
       });
     } catch (e) {
@@ -418,10 +470,10 @@ class Component extends DCLogic {
     }
   }
 
-  selecionar(cartao) {
-    const fechando = this.state.selectedId === cartao.id;
-    this.setState({ selectedId: fechando ? null : cartao.id, detalhe: fechando ? null : this.state.detalhe });
-    if (!fechando) this.carregarDetalhe(cartao);
+  alternarAnalise(cartaoId) {
+    const abrindo = this.state.analiseId !== cartaoId;
+    this.setState({ analiseId: abrindo ? cartaoId : null });
+    if (abrindo) this.montarAnalise(cartaoId);
   }
 
   setForm(patch) { this.setState({ form: { ...this.state.form, ...patch } }); }
@@ -430,9 +482,7 @@ class Component extends DCLogic {
     const f = this.state.form;
     if (!f.nome) return;
     const campos = {
-      nome: f.nome,
-      bandeira: f.bandeira,
-      cor: f.cor,
+      nome: f.nome, bandeira: f.bandeira, cor: f.cor,
       dia_fechamento: Number(f.diaFechamento),
       dia_vencimento: Number(f.diaVencimento),
       limite: f.limite || null,
@@ -454,11 +504,9 @@ class Component extends DCLogic {
     });
   }
 
-  editarCartao() {
-    const c = this.state.cartoes.find(x => x.id === this.state.selectedId);
-    if (!c) return;
+  editarCartao(c) {
     this.setState({
-      editingId: c.id, formOpen: true, confirmandoExclusao: false,
+      editingId: c.id, formOpen: true, confirmandoId: null,
       form: {
         nome: c.nome,
         bandeira: c.bandeira || 'visa',
@@ -470,115 +518,230 @@ class Component extends DCLogic {
     });
   }
 
-  /**
-   * O banco recusa apagar cartão que tenha gasto no crédito: o lançamento
-   * ficaria sem cartão e quebra a constraint. Conferimos antes para
-   * explicar em vez de mostrar o erro cru do Postgres.
-   */
-  async pedirExclusaoCartao() {
-    const id = this.state.selectedId;
-    if (!id) return;
+  async pedirExclusao(c) {
     try {
-      const n = await Casa.cartoes.contarLancamentos(id);
-      this.setState({ confirmandoExclusao: true, lancamentosDoCartao: n });
+      const n = await Casa.cartoes.contarLancamentos(c.id);
+      this.setState({ confirmandoId: c.id, lancamentosDoCartao: n });
     } catch (e) {
       this.setState({ erro: e.message });
     }
   }
 
-  async excluirCartao() {
-    const id = this.state.selectedId;
+  async excluirCartao(id) {
     try {
       await Casa.cartoes.excluir(id);
-      this.setState({ confirmandoExclusao: false, selectedId: null, detalhe: null });
-      if (this.state.editingId === id) this.fecharForm();
+      this.setState({ confirmandoId: null, analiseId: null });
       await this.carregar();
     } catch (e) {
-      this.setState({ erro: e.message, confirmandoExclusao: false });
+      this.setState({ erro: e.message, confirmandoId: null });
     }
-  }
-
-  /** Bloco de boletos do mês: total, lista e o aviso de vencido. */
-  valoresDosBoletos() {
-    const s = this.state;
-    const hoje = iso(new Date());
-    const total = s.boletos.reduce((t, b) => t + Number(b.valor), 0);
-    const vencidos = s.boletos.filter(b => b.vencimento < hoje);
-    const mes = MESES[s.mesRef] + ' ' + s.anoRef;
-
-    const boletos = s.boletos.map((b, i, arr) => {
-      const venceu = b.vencimento < hoje;
-      const dias = diasEntre(hoje, b.vencimento);
-      return {
-        chipKey: Casa.categorias.chipKey(b.categorias),
-        categoria: (b.categorias && b.categorias.nome) || 'Sem categoria',
-        valorFormatted: formatBRL(Number(b.valor)),
-        isParcelado: !!b.parcela_grupo,
-        parcelaTag: b.parcela_grupo ? `${b.parcela_num}/${b.parcela_total}` : '',
-        membro: (b.membros && b.membros.nome) || '',
-        vencLabel: venceu
-          ? `Venceu em ${diaMesCurto(b.vencimento)}`
-          : (dias === 0 ? 'Vence hoje' : `Vence em ${diaMesCurto(b.vencimento)}`),
-        vencStyle: {
-          fontSize: 12, fontWeight: 600,
-          color: venceu ? 'var(--color-alert)' : 'var(--text-secondary)',
-        },
-        rowStyle: {
-          display: 'flex', alignItems: 'center', gap: 12, padding: '14px 10px',
-          borderBottom: i < arr.length - 1 ? '1px solid var(--border-default)' : 'none',
-        },
-      };
-    });
-
-    return {
-      boletos,
-      temBoletos: s.boletos.length > 0,
-      boletoTotal: total,
-      boletoLabel: `Boletos de ${mes}`,
-      boletoTone: vencidos.length ? 'alert' : 'accent',
-      boletoFooter: s.boletos.length === 0
-        ? 'Nenhum boleto com vencimento neste mês'
-        : (vencidos.length
-            ? `${s.boletos.length} boleto(s) · ${vencidos.length} já vencido(s)`
-            : `${s.boletos.length} boleto(s) a pagar`),
-      boletoSubtitulo: `Vencimento em ${mes}`,
-    };
   }
 
   renderVals() {
     const s = this.state;
-    const f = s.form;
+    const linha = { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 10px', borderBottom: '1px solid var(--border-default)' };
 
-    const swatches = SWATCHES.map(sw => ({
-      label: sw.label,
-      onSelect: () => this.setForm({ cor: sw.hex }),
-      style: { width: 32, height: 32, borderRadius: '50%', background: sw.hex, border: f.cor === sw.hex ? '3px solid var(--text-primary)' : '1px solid var(--border-default)', cursor: 'pointer' },
-    }));
+    const totalCartoes = Object.keys(s.porCartao).reduce((t, k) => t + s.porCartao[k].total, 0);
+    const totalBoletos = s.boletos.reduce((t, b) => t + Number(b.valor), 0);
 
-    const cartoes = s.cartoes.map(c => {
-      const cor = c.cor || SWATCHES[0].hex;
+    const mostra = (id) => s.filtro === 'tudo'
+      || (s.filtro === 'cartoes' && id !== 'boletos')
+      || (s.filtro === 'boletos' && id === 'boletos')
+      || s.filtro === id;
+
+    const itemDeGasto = (x) => ({
+      chipKey: Casa.categorias.chipKey(x.categorias),
+      categoria: (x.categorias && x.categorias.nome) || 'Sem categoria',
+      valorFormatted: formatBRL(Number(x.valor)),
+      dataLabel: diaMesCurto(x.data),
+      dataStyle: { fontSize: 12, color: 'var(--text-secondary)' },
+      temTag: !!x.parcela_total,
+      tag: x.parcela_total ? `Parcela ${x.parcela_num}/${x.parcela_total}` : '',
+      membro: (x.membros && x.membros.nome) || '—',
+      rowStyle: linha,
+    });
+
+    // Carteira: os cartões como cartões mesmo. Diferente da versão antiga,
+    // eles não são a única porta de entrada nem escondem a lista — mostram o
+    // valor da fatura e o quanto do limite já foi usado, e um toque filtra.
+    const cartoesVisuais = s.cartoes.map((c) => {
+      const g = s.porCartao[c.id] || { total: 0, ciclos: [] };
+      const clara = isLightColor(c.cor);
+      const tinta = clara ? '#1C1C1C' : '#FFFFFF';
+      const fundo = c.cor || '#0E6E5B';
+      const ativo = s.filtro === c.id;
+      const limite = Number(c.limite || 0);
+      const uso = limite > 0 ? Math.min(100, (g.total / limite) * 100) : 0;
+      const ciclos = g.ciclos.slice().sort((x, y) => x.fechamento.localeCompare(y.fechamento));
       return {
-        nome: c.nome, bandeiraLabel: BANDEIRA_LABEL[c.bandeira] || c.bandeira || '',
-        diaFechamento: c.dia_fechamento, diaVencimento: c.dia_vencimento,
-        iconColor: isLightColor(cor) ? 'rgba(34,38,43,0.4)' : 'rgba(255,255,255,0.55)',
-        onSelect: () => this.selecionar(c),
-        cardStyle: {
-          display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 20, height: 170, padding: 22,
-          borderRadius: 18, background: cor, color: isLightColor(cor) ? 'var(--ink-900)' : '#fff',
-          border: s.selectedId === c.id ? '3px solid var(--text-primary)' : cor === '#FFFFFF' ? '1px solid var(--border-default)' : '3px solid transparent',
-          cursor: 'pointer', textAlign: 'left', boxShadow: 'var(--shadow-raised)',
+        nome: c.nome,
+        tinta,
+        bandeiraLabel: BANDEIRA_LABEL[c.bandeira] || 'Cartão',
+        totalFormatted: formatBRL(g.total),
+        meta: ciclos.length === 1
+          ? `fecha ${diaMesCurto(ciclos[0].fechamento)} · vence ${diaMesCurto(ciclos[0].vencimento)}`
+          : `fecha dia ${c.dia_fechamento} · vence dia ${c.dia_vencimento}`,
+        temLimite: limite > 0,
+        limiteLabel: `${Math.round(uso)}% de R$ ${formatBRL(limite)}`,
+        aria: ativo ? `Mostrar todos (${c.nome} está filtrado)` : `Ver só ${c.nome}`,
+        onSelect: () => this.setState({ filtro: ativo ? 'tudo' : c.id }),
+        style: {
+          flex: '0 0 230px', scrollSnapAlign: 'start',
+          display: 'flex', flexDirection: 'column', gap: 10,
+          padding: 16, minHeight: 150, textAlign: 'left', cursor: 'pointer',
+          borderRadius: 'var(--radius-card)', background: fundo, color: tinta,
+          border: clara ? '1px solid var(--border-strong)' : 'none',
+          fontFamily: 'var(--font-body)',
+          boxShadow: ativo ? '0 0 0 3px var(--color-primary)' : 'var(--shadow-card, 0 1px 2px rgba(34,38,43,.06))',
+          opacity: s.filtro === 'tudo' || ativo || s.filtro === 'cartoes' ? 1 : 0.55,
         },
+        bandeiraStyle: { fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 },
+        nomeStyle: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em' },
+        valorStyle: { fontFamily: 'var(--font-numeric)', fontFeatureSettings: 'var(--num-features)', fontWeight: 700, fontSize: 22, letterSpacing: '-0.02em' },
+        metaStyle: { fontSize: 11.5, opacity: 0.85 },
+        trilhoStyle: { height: 5, borderRadius: 'var(--radius-pill)', background: clara ? 'rgba(0,0,0,.12)' : 'rgba(255,255,255,.25)', overflow: 'hidden' },
+        barraStyle: { width: uso + '%', height: '100%', borderRadius: 'var(--radius-pill)', background: tinta, opacity: 0.9 },
+        limiteStyle: { fontSize: 11, opacity: 0.8 },
       };
     });
 
+    const grupos = [];
+
+    s.cartoes.forEach((c) => {
+      if (!mostra(c.id)) return;
+      const g = s.porCartao[c.id] || { total: 0, ciclos: [], itens: [] };
+      const ciclos = g.ciclos.slice().sort((a, b) => a.fechamento.localeCompare(b.fechamento));
+      const meta = ciclos.length === 1
+        ? `fecha ${diaMesCurto(ciclos[0].fechamento)} · vence ${diaMesCurto(ciclos[0].vencimento)}`
+        : ciclos.length > 1
+          ? `${ciclos.length} faturas no período`
+          : `fecha dia ${c.dia_fechamento} · vence dia ${c.dia_vencimento}`;
+      const aberta = s.analiseId === c.id;
+      const confirmando = s.confirmandoId === c.id;
+
+      grupos.push({
+        titulo: c.nome + (BANDEIRA_LABEL[c.bandeira] ? ' · ' + BANDEIRA_LABEL[c.bandeira] : ''),
+        meta,
+        metaStyle: { fontSize: 12, color: 'var(--text-secondary)' },
+        ehCartao: true,
+        pontoStyle: {
+          width: 10, height: 10, borderRadius: '50%', display: 'inline-block', flexShrink: 0,
+          background: c.cor || 'var(--color-primary)',
+          boxShadow: isLightColor(c.cor) ? 'inset 0 0 0 1px var(--border-strong)' : 'none',
+        },
+        totalFormatted: formatBRL(g.total),
+        vazio: g.itens.length === 0,
+        vazioTexto: 'Nenhum lançamento nesta fatura.',
+        itens: g.itens.slice().sort((a, b) => String(b.data).localeCompare(String(a.data))).map(itemDeGasto),
+
+        onEditar: () => this.editarCartao(c),
+        onExcluir: () => this.pedirExclusao(c),
+        confirmando,
+        podeExcluir: confirmando && s.lancamentosDoCartao === 0,
+        msgExcluir: confirmando && s.lancamentosDoCartao > 0
+          ? `${c.nome} tem ${s.lancamentosDoCartao} lançamento(s) — apague-os antes de excluir o cartão.`
+          : `Apagar o cartão ${c.nome}?`,
+        onConfirmarExcluir: () => this.excluirCartao(c.id),
+        onCancelarExcluir: () => this.setState({ confirmandoId: null }),
+        // Com lançamentos não há o que cancelar: só resta entender o motivo.
+        cancelarLabel: confirmando && s.lancamentosDoCartao > 0 ? 'Entendi' : 'Cancelar',
+
+        onAnalise: () => this.alternarAnalise(c.id),
+        rotuloAnalise: aberta ? 'Esconder análise' : 'Ver análise da fatura',
+        analiseAberta: aberta,
+        analise: s.analises[c.id] || { porCategoria: [], porMembro: [], comprometido: [], historico: [] },
+      });
+    });
+
+    if (mostra('boletos') && s.boletos.length) {
+      const hoje = hojeISO();
+      // O aviso de vencido precisa estar à vista sem abrir a lista: é a única
+      // coisa aqui que pede ação hoje.
+      const vencidos = s.boletos.filter(b => b.vencimento < hoje).length;
+      grupos.push({
+        titulo: 'Boletos',
+        meta: vencidos
+          ? `${vencidos} já vencido${vencidos > 1 ? 's' : ''} · vencimentos no período`
+          : 'vencimentos no período',
+        metaStyle: vencidos
+          ? { fontSize: 12, fontWeight: 700, color: 'var(--color-alert)' }
+          : { fontSize: 12, color: 'var(--text-secondary)' },
+        ehCartao: false,
+        pontoStyle: { width: 10, height: 10, borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: 'var(--gold-600)' },
+        totalFormatted: formatBRL(totalBoletos),
+        vazio: false,
+        vazioTexto: '',
+        itens: s.boletos.slice().sort((a, b) => String(a.vencimento).localeCompare(String(b.vencimento))).map((b) => {
+          const atrasado = b.vencimento < hoje;
+          return Object.assign(itemDeGasto(b), {
+            dataLabel: (atrasado ? 'venceu ' : 'vence ') + diaMesCurto(b.vencimento),
+            dataStyle: { fontSize: 12, fontWeight: atrasado ? 700 : 500, color: atrasado ? 'var(--color-alert)' : 'var(--text-secondary)' },
+          });
+        }),
+        analiseAberta: false,
+        analise: { porCategoria: [], porMembro: [], comprometido: [], historico: [] },
+      });
+    }
+
     return {
       isDesktop: s.isDesktop,
+      menuAberto: s.menuAberto,
+      erro: s.erro,
       casaNome: s.casaNome,
       contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
+      period: s.period,
+      onPeriodChange: (next) => this.setState({ period: next, analiseId: null }, () => this.carregar()),
+      onAbrirMenu: () => this.setState({ menuAberto: true }),
+      onFecharMenu: () => this.setState({ menuAberto: false }),
+      onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
+      onSettings: () => { window.location.href = 'Configurações.dc.html'; },
+
+      totalMes: totalCartoes + totalBoletos,
+      totalLabel: 'Total a pagar · ' + (s.period.label || ''),
+      totalTone: (totalCartoes + totalBoletos) > 0 ? 'primary' : 'default',
+      totalFooter: `R$ ${formatBRL(totalCartoes)} em cartões · R$ ${formatBRL(totalBoletos)} em boletos`,
+
+      temCartoes: s.cartoes.length > 0,
+      cartoesVisuais,
+      temFiltro: s.cartoes.length > 1 || (s.cartoes.length >= 1 && s.boletos.length > 0),
+      filtro: s.filtro,
+      onFiltroChange: (e) => this.setState({ filtro: e.target.value }),
+      cartoesFiltro: s.cartoes.map(c => ({ id: c.id, nome: 'Só ' + c.nome })),
+
+      grupos,
+      vazio: grupos.length === 0,
+      vazioTitulo: s.cartoes.length ? 'Nada a pagar neste período' : 'Nenhum cartão cadastrado',
+      vazioTexto: s.cartoes.length
+        ? 'Nenhuma fatura fecha e nenhum boleto vence no período escolhido.'
+        : 'Cadastre um cartão para acompanhar as faturas por aqui.',
+
+      toggleIcon: s.formOpen ? 'x' : 'plus',
+      toggleLabel: s.formOpen ? 'Fechar' : 'Novo cartão',
+      onToggleForm: () => (s.formOpen ? this.fecharForm() : this.setState({ formOpen: true })),
+      onFecharForm: () => this.fecharForm(),
       formOpen: s.formOpen,
-      // Janela flutuante: no celular sobe como folha pelo rodapé, no
-      // desktop abre centrada. Antes o formulário ficava fixo na página e
-      // empurrava gráficos e histórico para fora da primeira tela.
+      formTitle: s.editingId ? 'Editar cartão' : 'Novo cartão',
+      saveLabel: s.editingId ? 'Salvar alterações' : 'Cadastrar cartão',
+      canSave: !!s.form.nome,
+      onSave: () => this.save(),
+      form: s.form,
+      onNomeChange: (v) => this.setForm({ nome: v }),
+      onBandeiraChange: (e) => this.setForm({ bandeira: e.target.value }),
+      onFechamentoChange: (e) => this.setForm({ diaFechamento: e.target.value.replace(/\D/g, '').slice(0, 2) }),
+      onFechamentoBlur: () => { const n = Number(s.form.diaFechamento); this.setForm({ diaFechamento: n ? String(Math.min(31, Math.max(1, n))) : '1' }); },
+      onVencimentoChange: (e) => this.setForm({ diaVencimento: e.target.value.replace(/\D/g, '').slice(0, 2) }),
+      onVencimentoBlur: () => { const n = Number(s.form.diaVencimento); this.setForm({ diaVencimento: n ? String(Math.min(31, Math.max(1, n))) : '1' }); },
+      onLimiteChange: (v) => this.setForm({ limite: v }),
+      swatches: SWATCHES.map(sw => ({
+        label: sw.label,
+        onSelect: () => this.setForm({ cor: sw.hex }),
+        style: {
+          width: 30, height: 30, borderRadius: '50%', cursor: 'pointer', background: sw.hex,
+          border: s.form.cor === sw.hex ? '2px solid var(--color-primary)' : '1px solid var(--border-strong)',
+          outline: s.form.cor === sw.hex ? '2px solid var(--color-primary-soft)' : 'none',
+        },
+      })),
+
       overlayStyle: {
         position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(34,38,43,0.45)',
         display: 'flex', justifyContent: 'center',
@@ -590,52 +753,6 @@ class Component extends DCLogic {
         maxHeight: s.isDesktop ? '88vh' : '92vh', overflowY: 'auto',
       },
       onModalClick: (e) => e.stopPropagation(),
-      onFecharForm: () => this.fecharForm(),
-
-      formTitle: s.editingId ? 'Editar cartão' : 'Novo cartão',
-      saveLabel: s.editingId ? 'Salvar alterações' : 'Salvar cartão',
-      toggleLabel: 'Novo cartão',
-      toggleIcon: 'plus',
-      mesRef: s.mesRef,
-      anoRef: s.anoRef,
-      onPeriodoChange: (p) => this.setState({ mesRef: p.month, anoRef: p.year }, () => {
-        const c = this.state.cartoes.find(x => x.id === this.state.selectedId);
-        if (c) this.carregarDetalhe(c);
-      }),
-      onToggleForm: () => this.setState({ formOpen: true }),
-      menuAberto: this.state.menuAberto,
-      erro: this.state.erro,
-      onAbrirMenu: () => this.setState({ menuAberto: true }),
-      onFecharMenu: () => this.setState({ menuAberto: false }),
-      onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
-      onSettings: () => { window.location.href = 'Configurações.dc.html'; },
-      form: f,
-      onNomeChange: (v) => this.setForm({ nome: v }),
-      onBandeiraChange: (e) => this.setForm({ bandeira: e.target.value }),
-      onFechamentoChange: (e) => this.setForm({ diaFechamento: e.target.value.replace(/\D/g, '').slice(0, 2) }),
-      onFechamentoBlur: () => { const n = Number(f.diaFechamento); this.setForm({ diaFechamento: n ? String(Math.min(31, Math.max(1, n))) : '' }); },
-      onVencimentoChange: (e) => this.setForm({ diaVencimento: e.target.value.replace(/\D/g, '').slice(0, 2) }),
-      onVencimentoBlur: () => { const n = Number(f.diaVencimento); this.setForm({ diaVencimento: n ? String(Math.min(31, Math.max(1, n))) : '' }); },
-      onLimiteChange: (v) => this.setForm({ limite: v }),
-      canSave: !!f.nome && Number(f.diaFechamento) >= 1 && Number(f.diaFechamento) <= 31 && Number(f.diaVencimento) >= 1 && Number(f.diaVencimento) <= 31,
-      onSave: () => this.save(),
-      swatches,
-      cartoes,
-      ...this.valoresDosBoletos(),
-      selected: s.detalhe && Object.assign({}, s.detalhe, {
-        acoesMsg: s.confirmandoExclusao
-          ? (s.lancamentosDoCartao > 0
-              ? `Este cartão tem ${s.lancamentosDoCartao} lançamento(s). Exclua ou mova esses gastos em Saídas antes.`
-              : 'Excluir este cartão?')
-          : '',
-      }),
-      confirmandoExclusao: s.confirmandoExclusao,
-      podeExcluirCartao: s.lancamentosDoCartao === 0,
-      cancelarLabel: s.lancamentosDoCartao > 0 ? 'Entendi' : 'Cancelar',
-      onEditarCartao: () => this.editarCartao(),
-      onExcluirCartao: () => this.pedirExclusaoCartao(),
-      onConfirmarExclusaoCartao: () => this.excluirCartao(),
-      onCancelarExclusaoCartao: () => this.setState({ confirmandoExclusao: false }),
     };
   }
 }
