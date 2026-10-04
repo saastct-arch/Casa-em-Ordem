@@ -443,12 +443,26 @@
    */
   function aoMudar(tabelas, callback) {
     var lista = Array.isArray(tabelas) ? tabelas : [tabelas];
-    var canal = sb.channel('casa-' + lista.join('-') + '-' + Math.random().toString(36).slice(2));
-    lista.forEach(function (t) {
-      canal.on('postgres_changes', { event: '*', schema: 'public', table: t }, callback);
+    var canal = null;
+    var cancelado = false;
+
+    // O Realtime confere a RLS com o token do assinante. As telas chamam isto
+    // no componentDidMount, antes de o supabase-js terminar de restaurar a
+    // sessão do sessionStorage — e um canal que entra sem token é avaliado
+    // como anônimo, que não enxerga linha nenhuma. Por isso espera a sessão.
+    sb.auth.getSession().then(function () {
+      if (cancelado) return;
+      canal = sb.channel('casa-' + lista.join('-') + '-' + Math.random().toString(36).slice(2));
+      lista.forEach(function (t) {
+        canal.on('postgres_changes', { event: '*', schema: 'public', table: t }, callback);
+      });
+      canal.subscribe();
     });
-    canal.subscribe();
-    return function () { sb.removeChannel(canal); };
+
+    return function () {
+      cancelado = true;
+      if (canal) sb.removeChannel(canal);
+    };
   }
 
   window.Casa = {
