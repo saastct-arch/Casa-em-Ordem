@@ -51,6 +51,7 @@
   <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/base.css">
   <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
   <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
+  <script src="./app/nav.js"></script>
   <style>
     body{margin:0;}
     a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
@@ -67,6 +68,7 @@
     <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
 
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MenuButton" on-click="{{ onAbrirMenu }}" hint-size="40px,40px"></x-import></sc-if>
         <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="{{ casaNome }}" title="Entradas" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;" hint-size="100%,60px"></x-import>
         <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
       </div>
@@ -113,6 +115,18 @@
             </div>
           </sc-if>
 
+          <sc-if value="{{ isBeneficio }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Cartão de destino</label>
+              <select class="ceo-select" value="{{ form.carteira }}" onChange="{{ onCarteiraChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;">
+                <sc-for list="{{ carteiras }}" as="c" hint-placeholder-count="2">
+                  <option value="{{ c.id }}">{{ c.nome }}</option>
+                </sc-for>
+              </select>
+              <span style="font-size:12px;color:var(--text-secondary);">O crédito cai no cartão, não no dinheiro da casa.</span>
+            </div>
+          </sc-if>
+
           <div style="display:flex;flex-direction:column;gap:6px;">
             <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Membro da família</label>
             <select class="ceo-select" value="{{ form.membro }}" onChange="{{ onMembroChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;">
@@ -144,6 +158,9 @@
                     <sc-if value="{{ item.isResgate }}" hint-placeholder-val="{{ false }}">
                       <span style="display:inline-flex;align-self:flex-start;align-items:center;height:22px;padding:0 10px;border-radius:var(--radius-pill);background:var(--gold-100);color:var(--gold-700);font-size:11.5px;font-weight:600;">Resgate: {{ item.cofrinho }}</span>
                     </sc-if>
+                    <sc-if value="{{ item.isBeneficio }}" hint-placeholder-val="{{ false }}">
+                      <span style="display:inline-flex;align-self:flex-start;align-items:center;height:22px;padding:0 10px;border-radius:var(--radius-pill);background:var(--color-accent-soft);color:var(--gold-700);font-size:11.5px;font-weight:600;">{{ item.carteira }}</span>
+                    </sc-if>
                   </div>
                   <span style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-size:15px;font-weight:600;color:var(--money-in);white-space:nowrap;">+ R$ {{ item.amountFormatted }}</span>
                   <div style="display:flex;gap:2px;">
@@ -161,9 +178,7 @@
 
     </div>
     <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
-      <div style="position:sticky;bottom:0;">
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.BottomNav" active="entradas" on-select="{{ onNavigate }}" hint-size="100%,68px"></x-import>
-      </div>
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.NavDrawer" open="{{ menuAberto }}" active="entradas" on-select="{{ onNavigate }}" on-settings="{{ onSettings }}" on-close="{{ onFecharMenu }}"></x-import>
     </sc-if>
   </div>
 </div>
@@ -189,10 +204,11 @@ function hojeISO() {
 const TIPOS = [
   { id: 'salario', label: 'Salário', icon: 'landmark' },
   { id: 'extra', label: 'Extra', icon: 'zap' },
+  { id: 'beneficio', label: 'Benefício', icon: 'wallet' },
   { id: 'resgate', label: 'Saque de cofrinho', icon: 'piggy-bank' },
 ];
 
-const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html' };
+const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html', beneficios: 'Benefícios.dc.html' };
 
 function mesAtualPeriod() {
   const d = new Date();
@@ -203,20 +219,21 @@ function mesAtualPeriod() {
 class Component extends DCLogic {
   state = {
     isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    menuAberto: false,
     period: mesAtualPeriod(),
-    entries: [], categorias: [], membros: [], cofrinhos: [],
+    entries: [], categorias: [], membros: [], cofrinhos: [], carteiras: [],
     formOpen: false,
     editingId: null,
     casaNome: '',
     erro: '',
-    form: { valor: 0, data: hojeISO(), tipo: 'salario', membro: '', cofrinho: '' },
+    form: { valor: 0, data: hojeISO(), tipo: 'salario', membro: '', cofrinho: '', carteira: '' },
   };
 
   componentDidMount() {
     this.onResize = () => this.setState({ isDesktop: window.innerWidth >= 900 });
     window.addEventListener('resize', this.onResize);
     this.carregar();
-    this.pararEscuta = Casa.aoMudar(['entradas', 'cofrinhos', 'membros'], () => this.carregar());
+    this.pararEscuta = Casa.aoMudar(['entradas', 'cofrinhos', 'membros', 'carteiras'], () => this.carregar());
   }
   componentWillUnmount() {
     window.removeEventListener('resize', this.onResize);
@@ -231,19 +248,21 @@ class Component extends DCLogic {
         const casa = await Casa.casaAtual();
         this.setState({ casaNome: casa.nome });
       }
-      const [entries, categorias, membros, cofrinhos] = await Promise.all([
+      const [entries, categorias, membros, cofrinhos, carteiras] = await Promise.all([
         Casa.entradas.doPeriodo(this.state.period),
         Casa.categorias.listarPorTipo('entrada'),
         Casa.membros.listar(),
         Casa.cofrinhos.listar(),
+        Casa.carteiras.listar({ ativa: true }),
       ]);
       const f = this.state.form;
       this.setState({
-        entries, categorias, membros, cofrinhos, erro: '',
+        entries, categorias, membros, cofrinhos, carteiras, erro: '',
         form: {
           ...f,
           membro: f.membro || (membros[0] ? membros[0].id : ''),
           cofrinho: f.cofrinho || (cofrinhos[0] ? cofrinhos[0].id : ''),
+          carteira: f.carteira || (carteiras[0] ? carteiras[0].id : ''),
         },
       });
     } catch (e) {
@@ -257,6 +276,7 @@ class Component extends DCLogic {
   }
   tipoDaEntrada(e) {
     if (e.tipo === 'resgate') return 'resgate';
+    if (e.carteira_id) return 'beneficio';
     const slug = e.categorias && e.categorias.slug;
     return slug === 'salario' || slug === 'extra' ? slug : 'extra';
   }
@@ -289,13 +309,24 @@ class Component extends DCLogic {
           // Saque novo: o banco valida o saldo e cria a entrada Resgate.
           await Casa.cofrinhos.sacar(f.cofrinho, f.valor, { data: f.data, membroId: f.membro || null });
         }
+      } else if (f.tipo === 'beneficio') {
+        // Crédito de vale: cai no cartão, fora do dinheiro da casa.
+        if (!f.carteira) throw new Error('Escolha o cartão de benefício.');
+        const dados = {
+          descricao: 'Crédito de benefício',
+          valor: f.valor, data: f.data,
+          categoria_id: null, membro_id: f.membro || null,
+          tipo: 'normal', cofrinho_id: null, carteira_id: f.carteira,
+        };
+        if (this.state.editingId) await Casa.entradas.atualizar(this.state.editingId, dados);
+        else await Casa.entradas.criar(dados);
       } else {
         const dados = {
           descricao: TIPOS.find(t => t.id === f.tipo).label,
           valor: f.valor, data: f.data,
           categoria_id: this.catIdDoTipo(f.tipo),
           membro_id: f.membro || null,
-          tipo: 'normal', cofrinho_id: null,
+          tipo: 'normal', cofrinho_id: null, carteira_id: null,
         };
         if (this.state.editingId) await Casa.entradas.atualizar(this.state.editingId, dados);
         else await Casa.entradas.criar(dados);
@@ -303,7 +334,7 @@ class Component extends DCLogic {
 
       this.setState({
         formOpen: false, editingId: null, erro: '',
-        form: { valor: 0, data: f.data, tipo: 'salario', membro: f.membro, cofrinho: f.cofrinho },
+        form: { valor: 0, data: f.data, tipo: 'salario', membro: f.membro, cofrinho: f.cofrinho, carteira: f.carteira },
       });
       await this.carregar();
     } catch (e) {
@@ -319,6 +350,7 @@ class Component extends DCLogic {
         tipo: this.tipoDaEntrada(entry),
         membro: entry.membro_id || '',
         cofrinho: entry.cofrinho_id || (this.state.cofrinhos[0] ? this.state.cofrinhos[0].id : ''),
+        carteira: entry.carteira_id || (this.state.carteiras[0] ? this.state.carteiras[0].id : ''),
       },
     });
   }
@@ -342,11 +374,14 @@ class Component extends DCLogic {
         const tipoId = this.tipoDaEntrada(e);
         const t = TIPOS.find(x => x.id === tipoId);
         const isResgate = tipoId === 'resgate';
+        const isBeneficio = tipoId === 'beneficio';
         return {
           icon: t.icon,
           tipoLabel: t.label,
           membroLabel: (e.membros && e.membros.nome) || '—',
           isResgate,
+          isBeneficio,
+          carteira: (e.carteiras && e.carteiras.nome) || 'Benefício',
           cofrinho: (e.cofrinhos && e.cofrinhos.nome) || '',
           amountFormatted: formatBRL(Number(e.valor)),
           onEdit: () => this.edit(e),
@@ -384,6 +419,9 @@ class Component extends DCLogic {
       contentPadding: this.state.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
       period: this.state.period,
       onPeriodChange: (next) => this.setState({ period: next }, () => this.carregar()),
+      menuAberto: this.state.menuAberto,
+      onAbrirMenu: () => this.setState({ menuAberto: true }),
+      onFecharMenu: () => this.setState({ menuAberto: false }),
       onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },
       totalMes,
@@ -411,6 +449,9 @@ class Component extends DCLogic {
       onToggleForm: () => this.setState({ formOpen: true }),
       form,
       isResgate: form.tipo === 'resgate',
+      isBeneficio: form.tipo === 'beneficio',
+      carteiras: this.state.carteiras.map(c => ({ id: c.id, nome: c.nome })),
+      onCarteiraChange: (e) => this.setForm({ carteira: e.target.value }),
       tipos,
       membros: this.state.membros.map(m => ({ id: m.id, label: m.nome })),
       cofrinhos: this.state.cofrinhos,

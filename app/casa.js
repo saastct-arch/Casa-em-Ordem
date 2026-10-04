@@ -290,11 +290,45 @@
   });
 
   // -------------------------------------------------------- entradas
+  // -------------------------------------------------------- carteiras
+  // Vales (VR/VA). O saldo não mora em coluna: vem da view `carteiras_saldo`,
+  // que soma o extrato. Editar ou apagar um lançamento acerta o saldo sozinho.
+  var carteiras = Object.assign(tabela('carteiras', { coluna: 'nome', crescente: true }), {
+    async comSaldo() {
+      return ok(await sb.from('carteiras_saldo').select('*').order('nome'));
+    },
+    // Créditos e débitos de uma carteira na mesma lista, do mais novo ao mais velho.
+    async extrato(carteiraId) {
+      var creditos = ok(await sb.from('entradas')
+        .select('id, descricao, valor, data, observacao, membros(nome)')
+        .eq('carteira_id', carteiraId));
+      var debitos = ok(await sb.from('saidas')
+        .select('id, descricao, valor, data, observacao, categorias(nome, slug), membros(nome)')
+        .eq('carteira_id', carteiraId));
+      var linhas = (creditos || []).map(function (e) {
+        return { id: e.id, origem: 'entrada', sinal: 1, descricao: e.descricao,
+                 valor: num(e.valor), data: e.data, observacao: e.observacao,
+                 categoria: null, membro: e.membros && e.membros.nome };
+      }).concat((debitos || []).map(function (s) {
+        return { id: s.id, origem: 'saida', sinal: -1, descricao: s.descricao,
+                 valor: num(s.valor), data: s.data, observacao: s.observacao,
+                 categoria: s.categorias && s.categorias.nome,
+                 slug: s.categorias && s.categorias.slug,
+                 membro: s.membros && s.membros.nome };
+      }));
+      linhas.sort(function (a, b) {
+        if (a.data === b.data) return a.origem < b.origem ? 1 : -1;
+        return a.data < b.data ? 1 : -1;
+      });
+      return linhas;
+    },
+  });
+
   var entradas = Object.assign(tabela('entradas', { coluna: 'data', crescente: false }), {
     async doPeriodo(p) {
       var r = periodoRange(p);
       return ok(await sb.from('entradas')
-        .select('*, categorias(nome, slug), membros(nome), cofrinhos(nome)')
+        .select('*, categorias(nome, slug), membros(nome), cofrinhos(nome), carteiras(nome)')
         .gte('data', r.de).lte('data', r.ate)
         .order('data', { ascending: false }));
     },
@@ -305,7 +339,7 @@
     async doPeriodo(p) {
       var r = periodoRange(p);
       return ok(await sb.from('saidas')
-        .select('*, categorias(nome, slug, divida_id, cofrinho_id), membros(nome), cartoes(nome)')
+        .select('*, categorias(nome, slug, divida_id, cofrinho_id), membros(nome), cartoes(nome), carteiras(nome)')
         .gte('data', r.de).lte('data', r.ate)
         .order('data', { ascending: false }));
     },
@@ -426,6 +460,7 @@
     dividas: dividas,
     cofrinhos: cofrinhos,
     cartoes: cartoes,
+    carteiras: carteiras,
     entradas: entradas,
     saidas: saidas,
     faturas: faturas,

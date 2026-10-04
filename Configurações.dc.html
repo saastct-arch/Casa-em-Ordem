@@ -51,6 +51,7 @@
   <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/base.css">
   <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
   <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
+  <script src="./app/nav.js"></script>
   <style>
     body{margin:0;}
     a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
@@ -65,9 +66,12 @@
   <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
     <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:20px;">
 
-      <div style="display:flex;flex-direction:column;gap:2px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MenuButton" on-click="{{ onAbrirMenu }}" hint-size="40px,40px"></x-import></sc-if>
+      <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
         <span style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-secondary);">{{ casaNome }}</span>
         <h1 style="margin:0;font-family:var(--font-display);font-size:{{ titleSize }};font-weight:800;letter-spacing:-0.025em;">Configurações</h1>
+      </div>
       </div>
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Membros da família" subtitle="Quem participa do controle financeiro" hint-size="100%,320px" style="gap:16px;">
@@ -137,20 +141,19 @@
 
     </div>
     <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
-      <div style="position:sticky;bottom:0;">
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.BottomNav" active="config" on-select="{{ onNavigate }}" hint-size="100%,68px"></x-import>
-      </div>
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.NavDrawer" open="{{ menuAberto }}" active="config" on-select="{{ onNavigate }}" on-settings="{{ onStayHere }}" on-close="{{ onFecharMenu }}"></x-import>
     </sc-if>
   </div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
-const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html' };
+const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html', beneficios: 'Benefícios.dc.html' };
 const AVATAR_SWATCHES = ['#0E6E5B', '#C8963E', '#4472A8', '#8B5FA0', '#6B7A8F', '#C1502E'];
 
 class Component extends DCLogic {
   state = {
     isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    menuAberto: false,
     membros: [],
     editingId: null, editName: '',
     confirmRemoveId: null,
@@ -252,6 +255,9 @@ class Component extends DCLogic {
       casaNome: s.casaNome,
       contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
       titleSize: s.isDesktop ? '30px' : '22px',
+      menuAberto: this.state.menuAberto,
+      onAbrirMenu: () => this.setState({ menuAberto: true }),
+      onFecharMenu: () => this.setState({ menuAberto: false }),
       onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
       onStayHere: () => {},
       membros,

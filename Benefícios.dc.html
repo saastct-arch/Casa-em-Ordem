@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benefícios · Casa em Ordem</title>
+<meta name="description" content="O controle financeiro da família, em um lugar só.">
+<meta name="theme-color" content="#0E6E5B">
+<link rel="canonical" href="https://casa-em-ordem-psi.vercel.app/Benefícios.dc.html">
+
+<!-- marca e compartilhamento -->
+<link rel="icon" href="/icon.svg?v=2" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico?v=2" sizes="16x16 32x32 48x48">
+<link rel="shortcut icon" href="/favicon.ico?v=2">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Casa em Ordem">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Casa em Ordem">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="Benefícios · Casa em Ordem">
+<meta property="og:description" content="O controle financeiro da família, em um lugar só.">
+<meta property="og:url" content="https://casa-em-ordem-psi.vercel.app/Benefícios.dc.html">
+<meta property="og:image" content="https://casa-em-ordem-psi.vercel.app/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Casa em Ordem — o controle financeiro da família, em um lugar só">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Benefícios · Casa em Ordem">
+<meta name="twitter:description" content="O controle financeiro da família, em um lugar só.">
+<meta name="twitter:image" content="https://casa-em-ordem-psi.vercel.app/og-image.png">
+
+<script src="./app/guard.js"></script>
+<script src="./support.js"></script>
+<script src="./app/vendor/supabase.umd.js"></script>
+<script src="./app/casa.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/base.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
+  <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
+  <script src="./app/nav.js"></script>
+  <style>
+    body{margin:0;}
+    a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
+  </style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:var(--bg-app);font-family:var(--font-body);">
+  <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Sidebar" active="beneficios" on-select="{{ onNavigate }}" hint-size="248px,100%" style="position:sticky;top:0;height:100vh;"></x-import>
+  </sc-if>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
+
+      <div style="display:flex;align-items:center;gap:10px;">
+        <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MenuButton" on-click="{{ onAbrirMenu }}" hint-size="40px,40px"></x-import></sc-if>
+        <x-import style="flex:1;" component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="{{ casaNome }}" title="Benefícios" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
+      </div>
+
+      <sc-if value="{{ erro }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-control);background:var(--color-alert-soft);color:var(--color-alert);font-size:14px;font-weight:600;">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="triangle-alert" size="18" hint-size="18px,18px"></x-import>
+          {{ erro }}
+        </div>
+      </sc-if>
+
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="accent" icon="wallet" label="Saldo em benefícios" value="{{ totalGeral }}" footer="{{ rodapeResumo }}" hint-size="100%,130px"></x-import>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <sc-if value="{{ temCarteira }}" hint-placeholder-val="{{ true }}">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" icon="plus" on-click="{{ onAbrirCredito }}" hint-size="auto,52px" style="flex:1;min-width:180px;">Registrar crédito</x-import>
+        </sc-if>
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="soft" size="lg" icon="plus" on-click="{{ onNovaCarteira }}" hint-size="auto,52px" style="flex:1;min-width:180px;">Nova carteira</x-import>
+      </div>
+
+      <sc-if value="{{ modalCarteira }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ overlayStyle }}" onClick="{{ onFecharModal }}">
+          <div style="{{ modalStyle }}" onClick="{{ onModalClick }}">
+            <div style="position:absolute;top:14px;right:14px;z-index:1;">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="x" label="Fechar" size="36" bordered="{{ true }}" on-click="{{ onFecharModal }}" hint-size="36px,36px"></x-import>
+            </div>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="{{ tituloCarteira }}" subtitle="O saldo é calculado pelo extrato: crédito menos débito." hint-size="100%,420px" style="gap:16px;">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.TextInput" label="Nome" value="{{ form.nome }}" on-change="{{ onNomeChange }}" placeholder="Ex.: VR Alelo" hint-size="100%,68px"></x-import>
+
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Tipo</label>
+                <select class="ceo-select" value="{{ form.tipo }}" onChange="{{ onTipoChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;">
+                  <option value="vr">Vale-refeição</option>
+                  <option value="va">Vale-alimentação</option>
+                  <option value="outro">Outro benefício</option>
+                </select>
+              </div>
+
+              <sc-if value="{{ !editandoCarteira }}" hint-placeholder-val="{{ true }}">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Saldo que já está no cartão" value="{{ form.saldoInicial }}" on-change="{{ onSaldoInicialChange }}" hint-size="100%,68px"></x-import>
+              </sc-if>
+
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Recarga mensal (opcional)" value="{{ form.recargaValor }}" on-change="{{ onRecargaValorChange }}" hint-size="100%,68px"></x-import>
+
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Dia da recarga (opcional)</label>
+                <input type="number" min="1" max="31" value="{{ form.recargaDia }}" onChange="{{ onRecargaDiaChange }}" placeholder="Ex.: 5" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;"></input>
+                <span style="font-size:12px;color:var(--text-secondary);">Com o dia preenchido eu calculo quanto dá para gastar por dia até a próxima recarga.</span>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <label style="font-size:13px;font-weight:600;color:var(--text-primary);">De quem é (opcional)</label>
+                <select class="ceo-select" value="{{ form.membro }}" onChange="{{ onMembroChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;">
+                  <option value="">Da casa</option>
+                  <sc-for list="{{ membros }}" as="m" hint-placeholder-count="2">
+                    <option value="{{ m.id }}">{{ m.nome }}</option>
+                  </sc-for>
+                </select>
+              </div>
+
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !podeSalvarCarteira }}" on-click="{{ onSalvarCarteira }}" hint-size="100%,52px">{{ rotuloSalvarCarteira }}</x-import>
+            </x-import>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ modalCredito }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ overlayStyle }}" onClick="{{ onFecharModal }}">
+          <div style="{{ modalStyle }}" onClick="{{ onModalClick }}">
+            <div style="position:absolute;top:14px;right:14px;z-index:1;">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="x" label="Fechar" size="36" bordered="{{ true }}" on-click="{{ onFecharModal }}" hint-size="36px,36px"></x-import>
+            </div>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Registrar crédito" subtitle="Entra como entrada destinada ao cartão, fora do dinheiro da casa." hint-size="100%,380px" style="gap:16px;">
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Cartão</label>
+                <select class="ceo-select" value="{{ credito.carteira }}" onChange="{{ onCreditoCarteira }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;">
+                  <sc-for list="{{ carteirasSimples }}" as="c" hint-placeholder-count="2">
+                    <option value="{{ c.id }}">{{ c.nome }}</option>
+                  </sc-for>
+                </select>
+              </div>
+
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Valor creditado" value="{{ credito.valor }}" on-change="{{ onCreditoValor }}" hint-size="100%,68px"></x-import>
+
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Data do crédito</label>
+                <input type="date" value="{{ credito.data }}" onChange="{{ onCreditoData }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;"></input>
+              </div>
+
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.TextInput" label="Descrição" value="{{ credito.descricao }}" on-change="{{ onCreditoDescricao }}" placeholder="Ex.: Crédito de novembro" hint-size="100%,68px"></x-import>
+
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !podeSalvarCredito }}" on-click="{{ onSalvarCredito }}" hint-size="100%,52px">Lançar crédito</x-import>
+            </x-import>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ !temCarteira }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="wallet" tone="accent" title="Nenhum cartão de benefício" description="Cadastre o VR ou o VA para acompanhar o saldo e saber quanto dá para gastar por dia." hint-size="100%,260px"></x-import>
+      </sc-if>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start;">
+        <sc-for list="{{ cartoes }}" as="c" hint-placeholder-count="2">
+          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" hint-size="100%,300px" style="gap:14px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="width:44px;height:44px;flex-shrink:0;border-radius:12px;background:var(--color-accent-soft);color:var(--gold-700);display:flex;align-items:center;justify-content:center;">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="{{ c.icone }}" size="22" hint-size="22px,22px"></x-import>
+              </span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+                <span style="font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--text-primary);">{{ c.nome }}</span>
+                <span style="font-size:12px;color:var(--text-secondary);">{{ c.tipoLabel }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="pencil" label="Editar" size="32" on-click="{{ c.onEditar }}" hint-size="32px,32px"></x-import>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="trash-2" label="Excluir" size="32" tone="danger" on-click="{{ c.onExcluir }}" hint-size="32px,32px"></x-import>
+              </div>
+            </div>
+
+            <sc-if value="{{ c.confirmando }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0;">
+                <span style="font-size:13px;color:var(--text-secondary);margin-right:auto;">{{ c.msgExcluir }}</span>
+                <sc-if value="{{ c.podeExcluir }}" hint-placeholder-val="{{ true }}">
+                  <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="danger" size="sm" on-click="{{ c.onConfirmarExcluir }}" hint-size="auto,32px">Excluir</x-import>
+                </sc-if>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ c.onCancelarExcluir }}" hint-size="auto,32px">Cancelar</x-import>
+              </div>
+            </sc-if>
+
+            <div style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:700;font-size:clamp(26px,6vw,34px);letter-spacing:-0.02em;color:{{ c.corSaldo }};">R$ {{ c.saldoFormatted }}</div>
+
+            <sc-if value="{{ c.temRecarga }}" hint-placeholder-val="{{ true }}">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.ProgressBar" tone="accent" current="{{ c.saldo }}" target="{{ c.recarga }}" caption="{{ c.legendaRecarga }}" hint-size="100%,40px"></x-import>
+            </sc-if>
+
+            <sc-if value="{{ c.temRitmo }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-control);background:{{ c.ritmoBg }};">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="{{ c.ritmoIcone }}" size="17" hint-size="17px,17px"></x-import>
+                <span style="font-size:13px;color:{{ c.ritmoCor }};font-weight:600;">{{ c.ritmoTexto }}</span>
+              </div>
+            </sc-if>
+
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" full-width="{{ true }}" on-click="{{ c.onExtrato }}" hint-size="auto,36px">{{ c.rotuloExtrato }}</x-import>
+
+            <sc-if value="{{ c.extratoAberto }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;padding-top:4px;border-top:1px solid var(--border-default);">
+                <sc-if value="{{ c.extratoVazio }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:13px;color:var(--text-secondary);padding:10px 0;">Nenhum lançamento neste cartão ainda.</span>
+                </sc-if>
+                <sc-for list="{{ c.extrato }}" as="l" hint-placeholder-count="3">
+                  <sc-if value="{{ l.editando }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:8px;padding:10px 0;border-bottom:1px solid var(--border-default);">
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.TextInput" label="Descrição" value="{{ l.rascunhoDescricao }}" on-change="{{ l.onDescricaoChange }}" hint-size="100%,68px"></x-import>
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Valor" value="{{ l.rascunhoValor }}" on-change="{{ l.onValorChange }}" hint-size="100%,68px"></x-import>
+                      <div style="display:flex;gap:8px;">
+                        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="sm" full-width="{{ true }}" on-click="{{ l.onConfirmarEdicao }}" hint-size="auto,36px">Salvar</x-import>
+                        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" full-width="{{ true }}" on-click="{{ l.onCancelarEdicao }}" hint-size="auto,36px">Cancelar</x-import>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ l.confirmando }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--border-default);">
+                      <span style="font-size:13px;color:var(--text-secondary);margin-right:auto;">Excluir "{{ l.descricao }}"?</span>
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="danger" size="sm" on-click="{{ l.onConfirmarExcluir }}" hint-size="auto,32px">Excluir</x-import>
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ l.onCancelarExcluir }}" hint-size="auto,32px">Cancelar</x-import>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ l.normal }}" hint-placeholder-val="{{ true }}">
+                    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.ListItem" title="{{ l.descricao }}" meta="{{ l.meta }}" category="{{ l.categoria }}" amount="{{ l.valor }}" kind="{{ l.kind }}" on-edit="{{ l.onEditar }}" on-delete="{{ l.onExcluir }}" hint-size="100%,56px"></x-import>
+                  </sc-if>
+                </sc-for>
+              </div>
+            </sc-if>
+          </x-import>
+        </sc-for>
+      </div>
+
+    </div>
+    <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.NavDrawer" open="{{ menuAberto }}" active="beneficios" on-select="{{ onNavigate }}" on-settings="{{ onSettings }}" on-close="{{ onFecharMenu }}"></x-import>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+function formatBRL(n) {
+  return Math.abs(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+const MESES_LONGO = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function dateLabel(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${String(d).padStart(2, '0')} de ${MESES_LONGO[m - 1]}`;
+}
+function hojeISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+// Dia 31 em mês de 30 cai no último dia, igual ao `data_segura` do banco.
+function dataSegura(ano, mes, dia) {
+  const ultimo = new Date(ano, mes + 1, 0).getDate();
+  return new Date(ano, mes, Math.min(dia, ultimo));
+}
+function diasAteRecarga(dia) {
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  let alvo = dataSegura(hoje.getFullYear(), hoje.getMonth(), dia);
+  if (alvo <= hoje) alvo = dataSegura(hoje.getFullYear(), hoje.getMonth() + 1, dia);
+  return Math.max(1, Math.round((alvo - hoje) / 86400000));
+}
+
+const TIPO_LABEL = { vr: 'Vale-refeição', va: 'Vale-alimentação', outro: 'Benefício' };
+const TIPO_ICONE = { vr: 'utensils', va: 'shopping-cart', outro: 'wallet' };
+
+const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html', beneficios: 'Benefícios.dc.html' };
+
+class Component extends DCLogic {
+  state = {
+    isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    menuAberto: false,
+    carteiras: [],
+    membros: [],
+    extratos: {},
+    abertoId: null,
+    modal: null,                 // 'carteira' | 'credito'
+    editandoId: null,            // carteira em edição
+    confirmandoId: null,         // carteira a excluir
+    form: { nome: '', tipo: 'vr', saldoInicial: 0, recargaValor: 0, recargaDia: '', membro: '' },
+    credito: { carteira: '', valor: 0, data: hojeISO(), descricao: '' },
+    lancEditando: null,          // { origem, id }
+    lancRascunho: { descricao: '', valor: 0 },
+    lancConfirmando: null,       // { origem, id }
+    casaNome: '',
+    erro: '',
+  };
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ isDesktop: window.innerWidth >= 900 });
+    window.addEventListener('resize', this.onResize);
+    this.carregar();
+    // O saldo vem do extrato, então qualquer lançamento mexe nele.
+    this.pararEscuta = Casa.aoMudar(['carteiras', 'entradas', 'saidas'], () => this.carregar());
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.onResize);
+    this.pararEscuta && this.pararEscuta();
+  }
+
+  async carregar() {
+    if (!(await Casa.auth.exigirSessao())) return;
+    try {
+      if (!this.state.casaNome) {
+        const casa = await Casa.casaAtual();
+        this.setState({ casaNome: casa.nome });
+      }
+      const [carteiras, membros] = await Promise.all([
+        Casa.carteiras.comSaldo(),
+        Casa.membros.listar({ ativo: true }),
+      ]);
+      this.setState({ carteiras, membros, erro: '' });
+      if (this.state.abertoId) this.carregarExtrato(this.state.abertoId);
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  async carregarExtrato(id) {
+    try {
+      const linhas = await Casa.carteiras.extrato(id);
+      this.setState({ extratos: { ...this.state.extratos, [id]: linhas } });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  alternarExtrato(c) {
+    const abrindo = this.state.abertoId !== c.id;
+    this.setState({ abertoId: abrindo ? c.id : null, lancEditando: null, lancConfirmando: null });
+    if (abrindo) this.carregarExtrato(c.id);
+  }
+
+  // ------------------------------------------------------------- carteira
+  novaCarteira() {
+    this.setState({
+      modal: 'carteira', editandoId: null, erro: '',
+      form: { nome: '', tipo: 'vr', saldoInicial: 0, recargaValor: 0, recargaDia: '', membro: '' },
+    });
+  }
+  editarCarteira(c) {
+    this.setState({
+      modal: 'carteira', editandoId: c.id, erro: '',
+      form: {
+        nome: c.nome, tipo: c.tipo,
+        saldoInicial: Number(c.saldo_inicial || 0),
+        recargaValor: Number(c.recarga_valor || 0),
+        recargaDia: c.recarga_dia == null ? '' : String(c.recarga_dia),
+        membro: c.membro_id || '',
+      },
+    });
+  }
+  async salvarCarteira() {
+    const f = this.state.form;
+    try {
+      const dia = f.recargaDia === '' ? null : Math.min(31, Math.max(1, parseInt(f.recargaDia, 10) || 1));
+      const dados = {
+        nome: f.nome.trim(),
+        tipo: f.tipo,
+        recarga_valor: Number(f.recargaValor) > 0 ? Number(f.recargaValor) : null,
+        recarga_dia: dia,
+        membro_id: f.membro || null,
+      };
+      if (this.state.editandoId) {
+        await Casa.carteiras.atualizar(this.state.editandoId, dados);
+      } else {
+        dados.saldo_inicial = Number(f.saldoInicial) || 0;
+        await Casa.carteiras.criar(dados);
+      }
+      this.setState({ modal: null, editandoId: null });
+      this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+  async excluirCarteira(id) {
+    try {
+      await Casa.carteiras.excluir(id);
+      this.setState({ confirmandoId: null, abertoId: null });
+      this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message, confirmandoId: null });
+    }
+  }
+
+  // -------------------------------------------------------------- crédito
+  abrirCredito() {
+    const primeira = this.state.carteiras[0];
+    this.setState({
+      modal: 'credito', erro: '',
+      credito: {
+        carteira: primeira ? primeira.id : '',
+        valor: 0, data: hojeISO(), descricao: '',
+      },
+    });
+  }
+  async salvarCredito() {
+    const c = this.state.credito;
+    try {
+      await Casa.entradas.criar({
+        descricao: c.descricao.trim() || 'Crédito de benefício',
+        valor: Number(c.valor),
+        data: c.data,
+        carteira_id: c.carteira,
+      });
+      this.setState({ modal: null });
+      this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  // ----------------------------------------------------------- lançamento
+  editarLancamento(l) {
+    this.setState({
+      lancEditando: { origem: l.origem, id: l.id },
+      lancRascunho: { descricao: l.descricao, valor: l.valor },
+      lancConfirmando: null,
+    });
+  }
+  async confirmarEdicaoLancamento() {
+    const alvo = this.state.lancEditando;
+    const r = this.state.lancRascunho;
+    if (!alvo) return;
+    try {
+      const dados = { descricao: r.descricao.trim(), valor: Number(r.valor) };
+      if (alvo.origem === 'entrada') await Casa.entradas.atualizar(alvo.id, dados);
+      else await Casa.saidas.atualizar(alvo.id, dados);
+      this.setState({ lancEditando: null });
+      this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message, lancEditando: null });
+    }
+  }
+  async excluirLancamento(alvo) {
+    try {
+      if (alvo.origem === 'entrada') await Casa.entradas.excluir(alvo.id);
+      else await Casa.saidas.excluir(alvo.id);
+      this.setState({ lancConfirmando: null });
+      this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message, lancConfirmando: null });
+    }
+  }
+
+  renderVals() {
+    const s = this.state;
+
+    const total = s.carteiras.reduce((t, c) => t + Number(c.saldo_atual || 0), 0);
+
+    const cartoes = s.carteiras.map((c) => {
+      const saldo = Number(c.saldo_atual || 0);
+      const recarga = Number(c.recarga_valor || 0);
+      const vazia = Number(c.creditado || 0) === 0 && Number(c.debitado || 0) === 0;
+      const linhas = s.extratos[c.id] || [];
+      const aberto = s.abertoId === c.id;
+
+      let ritmo = '';
+      if (c.recarga_dia) {
+        const dias = diasAteRecarga(c.recarga_dia);
+        const diaTexto = dias === 1 ? 'Amanhã tem recarga' : `Faltam ${dias} dias para a recarga`;
+        ritmo = saldo > 0
+          ? `${diaTexto} · dá para gastar R$ ${formatBRL(saldo / dias)} por dia`
+          : `${diaTexto} · o saldo acabou`;
+      }
+
+      return {
+        id: c.id,
+        nome: c.nome,
+        tipoLabel: TIPO_LABEL[c.tipo] || TIPO_LABEL.outro,
+        icone: TIPO_ICONE[c.tipo] || TIPO_ICONE.outro,
+        saldo,
+        saldoFormatted: formatBRL(saldo),
+        corSaldo: saldo > 0 ? 'var(--gold-700)' : 'var(--text-secondary)',
+        recarga,
+        temRecarga: recarga > 0,
+        legendaRecarga: recarga > 0
+          ? `R$ ${formatBRL(saldo)} de uma recarga de R$ ${formatBRL(recarga)}`
+          : '',
+        temRitmo: !!ritmo,
+        ritmoTexto: ritmo,
+        ritmoIcone: saldo > 0 ? 'calendar' : 'triangle-alert',
+        ritmoBg: saldo > 0 ? 'var(--color-accent-soft)' : 'var(--color-alert-soft)',
+        ritmoCor: saldo > 0 ? 'var(--gold-700)' : 'var(--color-alert)',
+
+        onEditar: () => this.editarCarteira(c),
+        onExcluir: () => this.setState({ confirmandoId: c.id }),
+        confirmando: s.confirmandoId === c.id,
+        podeExcluir: vazia,
+        msgExcluir: vazia
+          ? 'Apagar este cartão?'
+          : 'Tem lançamentos neste cartão — apague-os antes de excluir.',
+        onConfirmarExcluir: () => this.excluirCarteira(c.id),
+        onCancelarExcluir: () => this.setState({ confirmandoId: null }),
+
+        onExtrato: () => this.alternarExtrato(c),
+        rotuloExtrato: aberto ? 'Esconder extrato' : 'Ver extrato',
+        extratoAberto: aberto,
+        extratoVazio: aberto && linhas.length === 0,
+        extrato: linhas.map((l) => {
+          const editando = !!s.lancEditando && s.lancEditando.origem === l.origem && s.lancEditando.id === l.id;
+          const confirmando = !!s.lancConfirmando && s.lancConfirmando.origem === l.origem && s.lancConfirmando.id === l.id;
+          return {
+            descricao: l.descricao,
+            meta: [dateLabel(l.data), l.categoria, l.membro].filter(Boolean).join(' · '),
+            categoria: l.slug || undefined,
+            valor: l.valor,
+            kind: l.sinal > 0 ? 'in' : 'out',
+            editando,
+            confirmando,
+            normal: !editando && !confirmando,
+            rascunhoDescricao: s.lancRascunho.descricao,
+            rascunhoValor: s.lancRascunho.valor,
+            onDescricaoChange: (v) => this.setState({ lancRascunho: { ...s.lancRascunho, descricao: v } }),
+            onValorChange: (v) => this.setState({ lancRascunho: { ...s.lancRascunho, valor: v } }),
+            onConfirmarEdicao: () => this.confirmarEdicaoLancamento(),
+            onCancelarEdicao: () => this.setState({ lancEditando: null }),
+            onEditar: () => this.editarLancamento(l),
+            onExcluir: () => this.setState({ lancConfirmando: { origem: l.origem, id: l.id }, lancEditando: null }),
+            onConfirmarExcluir: () => this.excluirLancamento({ origem: l.origem, id: l.id }),
+            onCancelarExcluir: () => this.setState({ lancConfirmando: null }),
+          };
+        }),
+      };
+    });
+
+    const f = s.form;
+    const cr = s.credito;
+
+    return {
+      isDesktop: s.isDesktop,
+      menuAberto: s.menuAberto,
+      contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
+      casaNome: s.casaNome,
+      erro: s.erro,
+
+      onAbrirMenu: () => this.setState({ menuAberto: true }),
+      onFecharMenu: () => this.setState({ menuAberto: false }),
+      onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
+      onSettings: () => { window.location.href = 'Configurações.dc.html'; },
+
+      totalGeral: total,
+      rodapeResumo: s.carteiras.length === 1
+        ? '1 cartão de benefício'
+        : `${s.carteiras.length} cartões de benefício`,
+      temCarteira: s.carteiras.length > 0,
+      cartoes,
+      membros: s.membros.map((m) => ({ id: m.id, nome: m.nome })),
+      carteirasSimples: s.carteiras.map((c) => ({ id: c.id, nome: c.nome })),
+
+      overlayStyle: {
+        position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(34,38,43,0.45)',
+        display: 'flex', justifyContent: 'center',
+        alignItems: s.isDesktop ? 'center' : 'flex-end',
+        padding: s.isDesktop ? 24 : 12, boxSizing: 'border-box', overflowY: 'auto',
+      },
+      modalStyle: {
+        position: 'relative', width: '100%', maxWidth: 560,
+        maxHeight: s.isDesktop ? '88vh' : '92vh', overflowY: 'auto',
+      },
+      onModalClick: (e) => e.stopPropagation(),
+      onFecharModal: () => this.setState({ modal: null, editandoId: null }),
+
+      modalCarteira: s.modal === 'carteira',
+      modalCredito: s.modal === 'credito',
+      editandoCarteira: !!s.editandoId,
+      tituloCarteira: s.editandoId ? 'Editar cartão' : 'Novo cartão de benefício',
+      rotuloSalvarCarteira: s.editandoId ? 'Salvar alterações' : 'Cadastrar cartão',
+      podeSalvarCarteira: f.nome.trim().length > 0,
+      form: f,
+      onNomeChange: (v) => this.setState({ form: { ...s.form, nome: v } }),
+      onTipoChange: (e) => this.setState({ form: { ...s.form, tipo: e.target.value } }),
+      onSaldoInicialChange: (v) => this.setState({ form: { ...s.form, saldoInicial: v } }),
+      onRecargaValorChange: (v) => this.setState({ form: { ...s.form, recargaValor: v } }),
+      onRecargaDiaChange: (e) => this.setState({ form: { ...s.form, recargaDia: e.target.value } }),
+      onMembroChange: (e) => this.setState({ form: { ...s.form, membro: e.target.value } }),
+      onNovaCarteira: () => this.novaCarteira(),
+      onSalvarCarteira: () => this.salvarCarteira(),
+
+      credito: cr,
+      podeSalvarCredito: !!cr.carteira && Number(cr.valor) > 0 && !!cr.data,
+      onAbrirCredito: () => this.abrirCredito(),
+      onCreditoCarteira: (e) => this.setState({ credito: { ...s.credito, carteira: e.target.value } }),
+      onCreditoValor: (v) => this.setState({ credito: { ...s.credito, valor: v } }),
+      onCreditoData: (e) => this.setState({ credito: { ...s.credito, data: e.target.value } }),
+      onCreditoDescricao: (v) => this.setState({ credito: { ...s.credito, descricao: v } }),
+      onSalvarCredito: () => this.salvarCredito(),
+    };
+  }
+}
+</script>
+</body>
+</html>

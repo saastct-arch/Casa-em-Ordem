@@ -51,6 +51,7 @@
   <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/base.css">
   <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
   <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
+  <script src="./app/nav.js"></script>
   <style>
     body{margin:0;}
     a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
@@ -67,6 +68,7 @@
     <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
 
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MenuButton" on-click="{{ onAbrirMenu }}" hint-size="40px,40px"></x-import></sc-if>
         <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="{{ casaNome }}" title="Saídas" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;" hint-size="100%,60px"></x-import>
         <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
       </div>
@@ -144,6 +146,18 @@
           <div style="display:flex;flex-direction:column;gap:6px;">
             <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Vencimento do boleto</label>
             <input type="date" value="{{ form.vencimento }}" onChange="{{ onVencimentoChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;"></input>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isVR }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Cartão de benefício</label>
+            <select class="ceo-select" value="{{ form.carteira }}" onChange="{{ onCarteiraChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;">
+              <sc-for list="{{ carteiras }}" as="c" hint-placeholder-count="2">
+                <option value="{{ c.id }}">{{ c.nome }}</option>
+              </sc-for>
+            </select>
+            <span style="font-size:13px;color:var(--text-secondary);">{{ avisoVR }}</span>
           </div>
         </sc-if>
 
@@ -267,9 +281,7 @@
 
     </div>
     <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
-      <div style="position:sticky;bottom:0;">
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.BottomNav" active="saidas" on-select="{{ onNavigate }}" hint-size="100%,68px"></x-import>
-      </div>
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.NavDrawer" open="{{ menuAberto }}" active="saidas" on-select="{{ onNavigate }}" on-settings="{{ onSettings }}" on-close="{{ onFecharMenu }}"></x-import>
     </sc-if>
   </div>
 </div>
@@ -298,15 +310,17 @@ const FORMAS = [
   { id: 'debito', label: 'Débito', icon: 'wallet' },
   { id: 'boleto', label: 'Boleto', icon: 'file-text' },
   { id: 'credito', label: 'Cartão de crédito', icon: 'receipt-text' },
+  { id: 'vr', label: 'Vale (VR/VA)', icon: 'utensils' },
 ];
 const CORES_CARTAO = ['var(--cat-pessoal)', 'var(--cat-carro)', 'var(--cat-casa)', 'var(--cat-outros)', 'var(--cat-divida)', 'var(--cat-futuro)'];
-const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html' };
+const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html', beneficios: 'Benefícios.dc.html' };
 
 class Component extends DCLogic {
   state = {
     isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    menuAberto: false,
     period: mesAtualPeriod(),
-    entries: [], categorias: [], membros: [], cartoes: [], dividas: [], cofrinhos: [],
+    entries: [], categorias: [], membros: [], cartoes: [], dividas: [], cofrinhos: [], carteiras: [],
     formOpen: false,
     newCatOpen: false, newCatName: '',
     filtroCategoria: 'todas', filtroMembro: 'todos', filtroForma: 'todas',
@@ -315,14 +329,14 @@ class Component extends DCLogic {
     confirmingEditScope: false,
     casaNome: '',
     erro: '',
-    form: { valor: 0, data: hojeISO(), category: '', forma: 'pix', cartao: '', vencimento: hojeISO(), parcelado: false, parcelas: '2', membro: '', observacao: '' },
+    form: { valor: 0, data: hojeISO(), category: '', forma: 'pix', cartao: '', carteira: '', vencimento: hojeISO(), parcelado: false, parcelas: '2', membro: '', observacao: '' },
   };
 
   componentDidMount() {
     this.onResize = () => this.setState({ isDesktop: window.innerWidth >= 900 });
     window.addEventListener('resize', this.onResize);
     this.carregar();
-    this.pararEscuta = Casa.aoMudar(['saidas', 'categorias', 'cartoes', 'membros'], () => this.carregar());
+    this.pararEscuta = Casa.aoMudar(['saidas', 'categorias', 'cartoes', 'membros', 'carteiras'], () => this.carregar());
   }
   componentWillUnmount() {
     window.removeEventListener('resize', this.onResize);
@@ -337,21 +351,23 @@ class Component extends DCLogic {
         const casa = await Casa.casaAtual();
         this.setState({ casaNome: casa.nome });
       }
-      const [entries, categorias, membros, cartoes, dividas, cofrinhos] = await Promise.all([
+      const [entries, categorias, membros, cartoes, dividas, cofrinhos, carteiras] = await Promise.all([
         Casa.saidas.doPeriodo(this.state.period),
         Casa.categorias.listarPorTipo('saida'),
         Casa.membros.listar(),
         Casa.cartoes.listar(),
         Casa.dividas.listar(),
         Casa.cofrinhos.listar(),
+        Casa.carteiras.listar({ ativa: true }),
       ]);
       const f = this.state.form;
       this.setState({
-        entries, categorias, membros, cartoes, dividas, cofrinhos, erro: '',
+        entries, categorias, membros, cartoes, dividas, cofrinhos, carteiras, erro: '',
         form: {
           ...f,
           category: f.category || (categorias[0] ? categorias[0].id : ''),
           cartao: f.cartao || (cartoes[0] ? cartoes[0].id : ''),
+          carteira: f.carteira || (carteiras[0] ? carteiras[0].id : ''),
           membro: f.membro || (membros[0] ? membros[0].id : ''),
         },
       });
@@ -372,6 +388,7 @@ class Component extends DCLogic {
         category: s.categorias[0] ? s.categorias[0].id : '',
         forma: 'pix',
         cartao: s.cartoes[0] ? s.cartoes[0].id : '',
+        carteira: s.carteiras[0] ? s.carteiras[0].id : '',
         vencimento: s.form.vencimento || hojeISO(),
         parcelado: false, parcelas: '2',
         membro: s.membros[0] ? s.membros[0].id : '',
@@ -455,6 +472,15 @@ class Component extends DCLogic {
         });
       } else {
         if (f.forma === 'boleto' && !f.vencimento) throw new Error('Informe o vencimento do boleto.');
+        if (f.forma === 'vr') {
+          if (!f.carteira) throw new Error('Escolha o cartão de benefício.');
+          // Vale não paga dívida nem enche cofrinho: o dinheiro é de uso
+          // restrito, e deixar passar bagunçaria o saldo dos dois.
+          const cat = this.catSelecionada();
+          if (cat && (cat.divida_id || cat.cofrinho_id)) {
+            throw new Error('Esta categoria está ligada a uma dívida ou cofrinho e não pode ser paga com vale.');
+          }
+        }
         // No boleto o dinheiro sai no vencimento, então é ele que define o
         // mês do lançamento; a data de cadastro fica guardada à parte.
         // É o mesmo critério das parcelas, senão boleto avulso e carnê
@@ -469,6 +495,7 @@ class Component extends DCLogic {
           membro_id: f.membro || null,
           forma_pagamento: f.forma,
           cartao_id: f.forma === 'credito' ? (f.cartao || null) : null,
+          carteira_id: f.forma === 'vr' ? f.carteira : null,
           vencimento: f.forma === 'boleto' ? f.vencimento : null,
           observacao: f.observacao || null,
         };
@@ -486,7 +513,7 @@ class Component extends DCLogic {
   edit(entry) {
     const parcelada = !!entry.parcela_grupo;
     this.setState({
-      editingId: entry.id,
+      editingId: entry.id, formOpen: true,
       editingParcela: parcelada ? entry : null,
       confirmDeleteId: null, confirmingEditScope: false,
       form: {
@@ -496,6 +523,7 @@ class Component extends DCLogic {
         category: entry.categoria_id || '',
         forma: entry.forma_pagamento,
         cartao: entry.cartao_id || (this.state.cartoes[0] ? this.state.cartoes[0].id : ''),
+        carteira: entry.carteira_id || (this.state.carteiras[0] ? this.state.carteiras[0].id : ''),
         vencimento: entry.vencimento || this.state.form.vencimento || hojeISO(),
         parcelado: parcelada,
         parcelas: String(entry.parcela_total || 2),
@@ -647,6 +675,9 @@ class Component extends DCLogic {
       contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
       period: s.period,
       onPeriodChange: (next) => this.setState({ period: next }, () => this.carregar()),
+      menuAberto: this.state.menuAberto,
+      onAbrirMenu: () => this.setState({ menuAberto: true }),
+      onFecharMenu: () => this.setState({ menuAberto: false }),
       onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },
       totalMes: s.entries.reduce((sum, e) => sum + Number(e.valor), 0),
@@ -684,6 +715,12 @@ class Component extends DCLogic {
       formas,
       isCredito: f.forma === 'credito',
       isBoleto: f.forma === 'boleto',
+      isVR: f.forma === 'vr',
+      carteiras: s.carteiras.map(c => ({ id: c.id, nome: c.nome })),
+      onCarteiraChange: (e) => this.setForm({ carteira: e.target.value }),
+      avisoVR: s.carteiras.length
+        ? 'Sai do saldo do cartão, não do dinheiro da casa.'
+        : 'Nenhum cartão cadastrado — cadastre um na aba Benefícios.',
       podeParcelar: this.podeParcelar(),
       cartoes,
       parceladoOptions,
@@ -699,6 +736,7 @@ class Component extends DCLogic {
       canSave: f.valor > 0 && !!f.category
         && (f.forma !== 'credito' || !!f.cartao)
         && (f.forma !== 'boleto' || !!f.vencimento)
+        && (f.forma !== 'vr' || !!f.carteira)
         && (!(this.podeParcelar() && f.parcelado) || (parcelasNum >= 2 && parcelasNum <= 24)),
       onValorChange: (v) => this.setForm({ valor: v }),
       onDataChange: (e) => this.setForm({ data: e.target.value }),

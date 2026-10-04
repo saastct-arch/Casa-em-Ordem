@@ -51,6 +51,7 @@
   <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/base.css">
   <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
   <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
+  <script src="./app/nav.js"></script>
   <style>
     body{margin:0;}
     a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
@@ -65,7 +66,10 @@
   <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
     <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
 
-      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="{{ casaNome }}" title="Faturas" month="{{ mesRef }}" year="{{ anoRef }}" on-period-change="{{ onPeriodoChange }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MenuButton" on-click="{{ onAbrirMenu }}" hint-size="40px,40px"></x-import></sc-if>
+        <x-import style="flex:1;" component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="{{ casaNome }}" title="Faturas" month="{{ mesRef }}" year="{{ anoRef }}" on-period-change="{{ onPeriodoChange }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
+      </div>
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="{{ toggleIcon }}" on-click="{{ onToggleForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
 
@@ -224,9 +228,7 @@
 
     </div>
     <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
-      <div style="position:sticky;bottom:0;">
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.BottomNav" active="faturas" on-select="{{ onNavigate }}" hint-size="100%,68px"></x-import>
-      </div>
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.NavDrawer" open="{{ menuAberto }}" active="faturas" on-select="{{ onNavigate }}" on-settings="{{ onSettings }}" on-close="{{ onFecharMenu }}"></x-import>
     </sc-if>
   </div>
 </div>
@@ -289,11 +291,12 @@ const SWATCHES = [
   { id: 'ouro', label: 'Ouro', hex: '#C8963E' },
 ];
 
-const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html' };
+const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html', beneficios: 'Benefícios.dc.html' };
 
 class Component extends DCLogic {
   state = {
     isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    menuAberto: false,
     cartoes: [],
     boletos: [],
     detalhe: null,
@@ -593,6 +596,9 @@ class Component extends DCLogic {
         if (c) this.carregarDetalhe(c);
       }),
       onToggleForm: () => this.setState({ formOpen: true }),
+      menuAberto: this.state.menuAberto,
+      onAbrirMenu: () => this.setState({ menuAberto: true }),
+      onFecharMenu: () => this.setState({ menuAberto: false }),
       onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },
       form: f,
