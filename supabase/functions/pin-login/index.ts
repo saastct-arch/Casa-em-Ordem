@@ -1,22 +1,21 @@
 // Casa em Ordem — login por PIN
 //
-// A família compartilha um PIN de 4 dígitos. O PIN não é uma senha do
-// Supabase: esta função o confere no servidor e, se bater, devolve a sessão
-// de UMA conta compartilhada. Assim o navegador nunca recebe a senha real,
-// e a chave publishable sozinha não abre nada (a RLS só libera
-// `authenticated`).
+// Cada casa tem um PIN de 4 dígitos e uma conta própria. O PIN não é uma
+// senha do Supabase: esta função o confere no servidor, descobre de qual
+// casa ele é, e devolve a sessão daquela conta. O navegador nunca recebe
+// a senha real, e a chave publishable sozinha não abre nada — a RLS filtra
+// por casa, então uma casa jamais enxerga os dados da outra.
 //
-// A senha da conta compartilhada é derivada do service-role key, que só
-// existe aqui dentro. Isso evita guardar mais um segredo e mantém o
-// login determinístico entre invocações.
+// A senha de cada conta é derivada do service-role key, que só existe aqui
+// dentro. Evita guardar mais um segredo e mantém o login determinístico.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const URL          = Deno.env.get("SUPABASE_URL")!;
 const ANON         = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE      = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const PIN_ESPERADO = Deno.env.get("FAMILY_PIN") ?? "0557";
-const EMAIL        = Deno.env.get("SHARED_EMAIL") ?? "familia@casa-em-ordem.local";
+// Cada casa tem o seu PIN e a sua conta — a tabela `casas` faz o
+// de-para. Assim dá para acrescentar uma casa sem publicar nada.
 
 // Depois de MAX_FALHAS erros o IP espera BLOQUEIO_MIN minutos.
 // Sem isso um PIN de 4 dígitos cai em 10 mil tentativas.
@@ -43,8 +42,8 @@ function iguais(a: string, b: string): boolean {
   return dif === 0;
 }
 
-/** Senha da conta compartilhada, derivada de um segredo que só o servidor tem. */
-async function senhaCompartilhada(): Promise<string> {
+/** Senha da conta de uma casa, derivada de um segredo que só o servidor tem. */
+async function senhaDaCasa(casaId: string): Promise<string> {
   const chave = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(SERVICE),
@@ -55,7 +54,7 @@ async function senhaCompartilhada(): Promise<string> {
   const assinatura = await crypto.subtle.sign(
     "HMAC",
     chave,
-    new TextEncoder().encode("casa-em-ordem/conta-compartilhada/v1"),
+    new TextEncoder().encode("casa-em-ordem/conta/" + casaId),
   );
   return btoa(String.fromCharCode(...new Uint8Array(assinatura)));
 }
@@ -97,7 +96,12 @@ Deno.serve(async (req) => {
     return json({ error: "Corpo inválido" }, 400);
   }
 
-  if (!iguais(pin, PIN_ESPERADO)) {
+  // Procura a casa cujo PIN bate. A comparação é em tempo constante para
+  // não vazar quantos dígitos acertaram.
+  const { data: casas } = await admin.from("casas").select("id, nome, pin, email");
+  const casa = (casas ?? []).find((c) => iguais(pin, String(c.pin)));
+
+  if (!casa) {
     const falhas = (tentativa?.falhas ?? 0) + 1;
     await admin.from("pin_tentativas").upsert({
       ip,
@@ -120,8 +124,9 @@ Deno.serve(async (req) => {
     );
   }
 
-  // --- PIN correto: devolve a sessão da conta compartilhada ---------------
-  const senha = await senhaCompartilhada();
+  // --- PIN correto: devolve a sessão da conta daquela casa ---------------
+  const senha = await senhaDaCasa(casa.id);
+  const EMAIL = casa.email;
   const anon = createClient(URL, ANON, { auth: { persistSession: false } });
 
   let { data: sessao, error } = await anon.auth.signInWithPassword({
@@ -153,6 +158,10 @@ Deno.serve(async (req) => {
     if (error) return json({ error: "Falha ao autenticar" }, 500);
   }
 
+  // Liga a conta à casa: é por aqui que a RLS sabe quais dados mostrar.
+  const idDoUsuario = sessao!.user!.id;
+  await admin.from("casa_contas").upsert({ user_id: idDoUsuario, casa_id: casa.id });
+
   await admin.from("pin_tentativas").upsert({
     ip,
     falhas: 0,
@@ -161,6 +170,7 @@ Deno.serve(async (req) => {
   });
 
   return json({
+    casa: casa.nome,
     access_token:  sessao!.session!.access_token,
     refresh_token: sessao!.session!.refresh_token,
     expires_at:    sessao!.session!.expires_at,

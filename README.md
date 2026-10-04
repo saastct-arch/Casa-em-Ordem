@@ -1,7 +1,12 @@
 # Casa em Ordem
 
-Controle financeiro da família. Uso compartilhado: um PIN único, todos veem
-e editam os mesmos dados.
+Controle financeiro doméstico. Cada casa tem o seu PIN; quem está dentro
+vê e edita os mesmos dados, e uma casa nunca enxerga a outra.
+
+| PIN | Casa |
+|---|---|
+| `0557` | Família Guimarães Silva |
+| `1202` | Italo e Maria |
 
 Backend: Supabase (projeto `ithttzcieeatkxnppxcf`). Frontend: páginas
 estáticas servidas pela Vercel.
@@ -10,8 +15,22 @@ estáticas servidas pela Vercel.
 
 Não há cadastro de usuário. A tela de login pede um PIN de 4 dígitos e a
 edge function [`pin-login`](supabase/functions/pin-login/index.ts) o confere
-**no servidor**. Se bater, ela devolve a sessão de uma única conta
-compartilhada pela família.
+**no servidor**. Se bater, ela descobre de qual casa é aquele PIN e devolve
+a sessão da conta daquela casa.
+
+### Duas casas, dados separados
+
+Cada tabela tem `casa_id`, preenchido sozinho pela função `minha_casa()` —
+o cliente nunca manda esse campo nem consegue escolher a casa de outra
+gente. A RLS filtra tudo por ele.
+
+A tabela `casas` (com os PINs) fica sem policy nenhuma: só o service role,
+que é quem a edge function usa, a alcança. O PIN nunca sai do servidor. O
+cabeçalho lê o nome da casa pela view `minha_casa_info`, que expõe só id e
+nome.
+
+Para acrescentar uma casa, basta inserir uma linha em `casas` — a conta é
+criada no primeiro login, sem publicar nada.
 
 Isso importa porque a chave publishable fica visível no navegador: se a
 conferência do PIN fosse no cliente, qualquer pessoa leria os dados só com
@@ -214,6 +233,16 @@ compartilhamento, onde há espaço.
 
 Para regerar os PNG depois de mexer nos SVG, rasterize `brand/*.svg` e
 `brand/og.html` nos tamanhos da tabela.
+
+## Lançar em janela flutuante
+
+O formulário de cada aba abre numa janela sobreposta: folha pelo rodapé no
+celular, diálogo centrado no desktop. Fecha no X ou clicando fora.
+
+Antes ele ficava fixo na página e empurrava gráfico e histórico para fora
+da primeira tela — no celular a aba Saídas tinha 2319px de altura, contra
+1185px agora. A aba existe para ver o que já aconteceu; lançar é a exceção,
+não o padrão.
 
 ## Editar e excluir
 

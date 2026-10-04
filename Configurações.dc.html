@@ -66,7 +66,7 @@
     <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:20px;">
 
       <div style="display:flex;flex-direction:column;gap:2px;">
-        <span style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-secondary);">Família Guimarães Silva</span>
+        <span style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-secondary);">{{ casaNome }}</span>
         <h1 style="margin:0;font-family:var(--font-display);font-size:{{ titleSize }};font-weight:800;letter-spacing:-0.025em;">Configurações</h1>
       </div>
 
@@ -156,6 +156,7 @@ class Component extends DCLogic {
     confirmRemoveId: null,
     addOpen: false,
     newForm: { nome: '', cor: AVATAR_SWATCHES[0] },
+    casaNome: '',
     erro: '',
   };
 
@@ -174,6 +175,11 @@ class Component extends DCLogic {
   async carregar() {
     if (!(await Casa.auth.exigirSessao())) return;
     try {
+      // Qual casa está logada: o PIN do login decide, e o cabeçalho mostra.
+      if (!this.state.casaNome) {
+        const casa = await Casa.casaAtual();
+        this.setState({ casaNome: casa.nome });
+      }
       this.setState({ membros: await Casa.membros.listar(), erro: '' });
     } catch (e) {
       this.setState({ erro: e.message });
@@ -243,6 +249,7 @@ class Component extends DCLogic {
 
     return {
       isDesktop: s.isDesktop,
+      casaNome: s.casaNome,
       contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
       titleSize: s.isDesktop ? '30px' : '22px',
       onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },

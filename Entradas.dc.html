@@ -67,7 +67,7 @@
     <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
 
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Guimarães Silva" title="Entradas" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;" hint-size="100%,60px"></x-import>
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="{{ casaNome }}" title="Entradas" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;" hint-size="100%,60px"></x-import>
         <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
       </div>
 
@@ -78,6 +78,12 @@
       </div>
 
       <sc-if value="{{ formOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ overlayStyle }}" onClick="{{ onFecharForm }}">
+          <div style="{{ modalStyle }}" onClick="{{ onModalClick }}">
+            <div style="position:absolute;top:14px;right:14px;z-index:1;">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="x" label="Fechar" size="36" bordered="{{ true }}" on-click="{{ onFecharForm }}" hint-size="36px,36px"></x-import>
+            </div>
+
         <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="{{ formTitle }}" hint-size="100%,420px" style="gap:18px;">
           <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Valor" value="{{ form.valor }}" on-change="{{ onValorChange }}" size="lg" hint-size="100%,68px"></x-import>
 
@@ -118,6 +124,8 @@
 
           <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSave }}" on-click="{{ onSave }}" hint-size="100%,52px">{{ saveLabel }}</x-import>
         </x-import>
+          </div>
+        </div>
       </sc-if>
 
       <div style="display:flex;flex-direction:column;gap:20px;">
@@ -199,6 +207,7 @@ class Component extends DCLogic {
     entries: [], categorias: [], membros: [], cofrinhos: [],
     formOpen: false,
     editingId: null,
+    casaNome: '',
     erro: '',
     form: { valor: 0, data: hojeISO(), tipo: 'salario', membro: '', cofrinho: '' },
   };
@@ -217,6 +226,11 @@ class Component extends DCLogic {
   async carregar() {
     if (!(await Casa.auth.exigirSessao())) return;
     try {
+      // Qual casa está logada: o PIN do login decide, e o cabeçalho mostra.
+      if (!this.state.casaNome) {
+        const casa = await Casa.casaAtual();
+        this.setState({ casaNome: casa.nome });
+      }
       const [entries, categorias, membros, cofrinhos] = await Promise.all([
         Casa.entradas.doPeriodo(this.state.period),
         Casa.categorias.listarPorTipo('entrada'),
@@ -250,6 +264,11 @@ class Component extends DCLogic {
   toggleForm() {
     const next = !this.state.formOpen;
     this.setState({ formOpen: next, editingId: next ? this.state.editingId : null });
+  }
+
+  /** Fecha a janela e abandona a edição em curso. */
+  fecharForm() {
+    this.setState({ formOpen: false, editingId: null });
   }
   setForm(patch) { this.setState({ form: { ...this.state.form, ...patch } }); }
 
@@ -361,6 +380,7 @@ class Component extends DCLogic {
 
     return {
       isDesktop: this.state.isDesktop,
+      casaNome: this.state.casaNome,
       contentPadding: this.state.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
       period: this.state.period,
       onPeriodChange: (next) => this.setState({ period: next }, () => this.carregar()),
@@ -368,11 +388,27 @@ class Component extends DCLogic {
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },
       totalMes,
       formOpen,
+      // Janela flutuante: no celular sobe como folha pelo rodapé, no
+      // desktop abre centrada. Antes o formulário ficava fixo na página e
+      // empurrava gráficos e histórico para fora da primeira tela.
+      overlayStyle: {
+        position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(34,38,43,0.45)',
+        display: 'flex', justifyContent: 'center',
+        alignItems: this.state.isDesktop ? 'center' : 'flex-end',
+        padding: this.state.isDesktop ? 24 : 12, boxSizing: 'border-box', overflowY: 'auto',
+      },
+      modalStyle: {
+        position: 'relative', width: '100%', maxWidth: 560,
+        maxHeight: this.state.isDesktop ? '88vh' : '92vh', overflowY: 'auto',
+      },
+      onModalClick: (e) => e.stopPropagation(),
+      onFecharForm: () => this.fecharForm(),
+
       formTitle: this.state.editingId ? 'Editar entrada' : 'Nova entrada',
       saveLabel: this.state.editingId ? 'Salvar alterações' : 'Salvar entrada',
-      toggleLabel: formOpen ? 'Fechar' : 'Nova entrada',
+      toggleLabel: 'Nova entrada',
       toggleIcon: formOpen ? 'x' : 'plus',
-      onToggleForm: () => this.toggleForm(),
+      onToggleForm: () => this.setState({ formOpen: true }),
       form,
       isResgate: form.tipo === 'resgate',
       tipos,

@@ -65,13 +65,19 @@
   <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
     <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:18px;">
 
-      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Guimarães Silva" title="Dívidas" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="{{ casaNome }}" title="Dívidas" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" hint-size="100%,60px"></x-import>
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="alert" icon="hand-coins" label="Saldo devedor total" value="{{ saldoTotal }}" hint-size="100%,130px"></x-import>
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="{{ toggleIcon }}" on-click="{{ onToggleForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
 
       <sc-if value="{{ formOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ overlayStyle }}" onClick="{{ onFecharForm }}">
+          <div style="{{ modalStyle }}" onClick="{{ onModalClick }}">
+            <div style="position:absolute;top:14px;right:14px;z-index:1;">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="x" label="Fechar" size="36" bordered="{{ true }}" on-click="{{ onFecharForm }}" hint-size="36px,36px"></x-import>
+            </div>
+
         <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="{{ formTitle }}" hint-size="100%,440px" style="gap:18px;">
           <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.TextInput" label="Nome" value="{{ form.nome }}" on-change="{{ onNomeChange }}" placeholder="Ex.: Financiamento do carro" hint-size="100%,68px"></x-import>
           <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Valor total" value="{{ form.valorTotal }}" on-change="{{ onValorTotalChange }}" size="lg" hint-size="100%,68px"></x-import>
@@ -99,6 +105,8 @@
 
           <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSave }}" on-click="{{ onSave }}" hint-size="100%,52px">{{ saveLabel }}</x-import>
         </x-import>
+          </div>
+        </div>
       </sc-if>
 
       <div style="display:flex;align-items:center;gap:10px;">
@@ -201,6 +209,7 @@ class Component extends DCLogic {
     expandedId: null,
     sortBy: 'saldo',
     lastField: 'total',
+    casaNome: '',
     erro: '',
     form: { nome: '', valorTotal: 0, dataCadastro: hojeISO(), parcelas: '12', valorParcela: 0, juros: '' },
   };
@@ -221,6 +230,11 @@ class Component extends DCLogic {
   async carregar() {
     if (!(await Casa.auth.exigirSessao())) return;
     try {
+      // Qual casa está logada: o PIN do login decide, e o cabeçalho mostra.
+      if (!this.state.casaNome) {
+        const casa = await Casa.casaAtual();
+        this.setState({ casaNome: casa.nome });
+      }
       const dividas = await Casa.dividas.listar();
       this.setState({ dividas, erro: '' });
       if (this.state.expandedId) this.carregarPagamentos(this.state.expandedId);
@@ -410,14 +424,31 @@ class Component extends DCLogic {
 
     return {
       isDesktop: s.isDesktop,
+      casaNome: s.casaNome,
       contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
       saldoTotal: computed.reduce((sum, d) => sum + d.saldo, 0),
       formOpen: s.formOpen,
+      // Janela flutuante: no celular sobe como folha pelo rodapé, no
+      // desktop abre centrada. Antes o formulário ficava fixo na página e
+      // empurrava gráficos e histórico para fora da primeira tela.
+      overlayStyle: {
+        position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(34,38,43,0.45)',
+        display: 'flex', justifyContent: 'center',
+        alignItems: s.isDesktop ? 'center' : 'flex-end',
+        padding: s.isDesktop ? 24 : 12, boxSizing: 'border-box', overflowY: 'auto',
+      },
+      modalStyle: {
+        position: 'relative', width: '100%', maxWidth: 560,
+        maxHeight: s.isDesktop ? '88vh' : '92vh', overflowY: 'auto',
+      },
+      onModalClick: (e) => e.stopPropagation(),
+      onFecharForm: () => this.cancelarEdicao(),
+
       formTitle: s.editingId ? 'Editar dívida' : 'Nova dívida',
       saveLabel: s.editingId ? 'Salvar alterações' : 'Salvar dívida',
-      toggleLabel: s.formOpen ? 'Fechar' : 'Nova dívida',
-      toggleIcon: s.formOpen ? 'x' : 'plus',
-      onToggleForm: () => (s.formOpen ? this.cancelarEdicao() : this.setState({ formOpen: true })),
+      toggleLabel: 'Nova dívida',
+      toggleIcon: 'plus',
+      onToggleForm: () => this.setState({ formOpen: true }),
       onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },
       form: f,

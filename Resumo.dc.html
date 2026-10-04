@@ -66,14 +66,14 @@
     <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:20px;">
 
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="Família Guimarães Silva" title="Resumo" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;"
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="{{ casaNome }}" title="Resumo" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;"
           hint-size="100%,60px"></x-import>
         <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
       </div>
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" hint-size="100%,180px" style="gap:18px;">
         <div style="display:flex;flex-direction:column;gap:4px;">
-          <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">Olá, família Guimarães Silva</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text-secondary);">Olá, {{ casaNome }}</span>
           <div style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:700;font-size:clamp(32px,6vw,44px);letter-spacing:-0.025em;color:var(--text-primary);line-height:1.05;">
             R$ {{ saldoFormatted }}
           </div>
@@ -206,6 +206,7 @@ class Component extends DCLogic {
     period: mesAtualPeriod(),
     entradas: [], saidas: [], dividas: [], cofrinhos: [], faturas: [], boletos: [],
     historico: [],
+    casaNome: '',
     erro: '',
   };
 
@@ -223,6 +224,11 @@ class Component extends DCLogic {
   async carregar() {
     if (!(await Casa.auth.exigirSessao())) return;
     try {
+      // Qual casa está logada: o PIN do login decide, e o cabeçalho mostra.
+      if (!this.state.casaNome) {
+        const casa = await Casa.casaAtual();
+        this.setState({ casaNome: casa.nome });
+      }
       // Janela dos boletos: o que venceu há pouco e o que vence logo.
       // Sem isso um boleto atrasado só apareceria na aba Faturas.
       const hojeD = new Date();
@@ -386,6 +392,7 @@ class Component extends DCLogic {
 
     return {
       isDesktop: s.isDesktop,
+      casaNome: s.casaNome,
       contentPadding: s.isDesktop ? '28px 32px 40px' : '20px 16px 24px',
       period: s.period,
       onPeriodChange: (next) => this.setState({ period: next }, () => this.carregar()),

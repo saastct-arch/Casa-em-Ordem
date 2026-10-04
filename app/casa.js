@@ -86,6 +86,16 @@
     location.replace('index.html');
   });
 
+  /**
+   * A casa da sessão atual. O PIN do login é que decide qual é — a view
+   * devolve só id e nome, nunca o PIN.
+   */
+  async function casaAtual() {
+    var r = await sb.from('minha_casa_info').select('id, nome').maybeSingle();
+    if (r.error) throw new Error(r.error.message);
+    return r.data || { id: null, nome: '' };
+  }
+
   // ---------------------------------------------------------- período
   /**
    * Converte o payload do PeriodFilter em intervalo de datas.
@@ -409,6 +419,7 @@
   window.Casa = {
     sb: sb,
     auth: auth,
+    casaAtual: casaAtual,
     periodoRange: periodoRange,
     membros: membros,
     categorias: categorias,
