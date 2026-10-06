@@ -87,12 +87,6 @@
             {{ saldoTexto }}
           </div>
           <span style="font-size:13px;color:var(--text-secondary);">{{ saldoLegenda }}</span>
-          <sc-if value="{{ temBeneficio }}" hint-placeholder-val="{{ false }}">
-            <span style="display:inline-flex;align-self:flex-start;align-items:center;gap:7px;margin-top:6px;height:28px;padding:0 12px;border-radius:var(--radius-pill);background:var(--color-accent-soft);color:var(--gold-700);font-size:12.5px;font-weight:600;">
-              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="wallet" size="14" hint-size="14px,14px"></x-import>
-              {{ beneficioLegenda }}
-            </span>
-          </sc-if>
         </div>
         <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.ProgressBar" tone="{{ progressTone }}" value="{{ pctComprometida }}" label="Renda comprometida" caption="{{ progressCaption }}" hint-size="100%,40px"></x-import>
       </x-import>
@@ -218,7 +212,7 @@ class Component extends DCLogic {
     isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
     menuAberto: false,
     period: mesAtualPeriod(),
-    entradas: [], saidas: [], dividas: [], cofrinhos: [], faturas: [], boletos: [], carteiras: [],
+    entradas: [], saidas: [], dividas: [], cofrinhos: [], faturas: [], boletos: [],
     historico: [],
     casaNome: '',
     erro: '',
@@ -228,7 +222,7 @@ class Component extends DCLogic {
     this.onResize = () => this.setState({ isDesktop: window.innerWidth >= 900 });
     window.addEventListener('resize', this.onResize);
     this.carregar();
-    this.pararEscuta = Casa.aoMudar(['entradas', 'saidas', 'dividas', 'cofrinhos', 'cartoes', 'carteiras'], () => this.carregar());
+    this.pararEscuta = Casa.aoMudar(['entradas', 'saidas', 'dividas', 'cofrinhos', 'cartoes'], () => this.carregar());
   }
   componentWillUnmount() {
     window.removeEventListener('resize', this.onResize);
@@ -249,16 +243,15 @@ class Component extends DCLogic {
       const de = iso(new Date(hojeD.getFullYear(), hojeD.getMonth(), hojeD.getDate() - 60));
       const ate = iso(new Date(hojeD.getFullYear(), hojeD.getMonth(), hojeD.getDate() + 7));
 
-      const [entradas, saidas, dividas, cofrinhos, faturas, boletos, carteiras] = await Promise.all([
+      const [entradas, saidas, dividas, cofrinhos, faturas, boletos] = await Promise.all([
         Casa.entradas.doPeriodo(this.state.period),
         Casa.saidas.doPeriodo(this.state.period),
         Casa.dividas.listar(),
         Casa.cofrinhos.listar(),
         Casa.faturas.listar(),
         Casa.saidas.boletos(de, ate),
-        Casa.carteiras.comSaldo(),
       ]);
-      this.setState({ entradas, saidas, dividas, cofrinhos, faturas, boletos, carteiras, erro: '' });
+      this.setState({ entradas, saidas, dividas, cofrinhos, faturas, boletos, erro: '' });
       this.carregarHistorico();
     } catch (e) {
       this.setState({ erro: e.message });
@@ -286,8 +279,11 @@ class Component extends DCLogic {
       const porChave = {};
       buckets.forEach(b => { porChave[b.chave] = b; });
 
-      ents.forEach(e => { const b = porChave[e.data.slice(0, 7)]; if (b) b.inVal += Number(e.valor); });
-      sais.forEach(e => { const b = porChave[e.data.slice(0, 7)]; if (b) b.outVal += Number(e.valor); });
+      // Mesmo recorte do saldo: só o que passou pela conta.
+      ents.filter(e => !e.carteira_id)
+          .forEach(e => { const b = porChave[e.data.slice(0, 7)]; if (b) b.inVal += Number(e.valor); });
+      sais.filter(e => e.forma_pagamento !== 'vr' && !e.carteira_id)
+          .forEach(e => { const b = porChave[e.data.slice(0, 7)]; if (b) b.outVal += Number(e.valor); });
 
       this.setState({ historico: buckets });
     } catch (e) {
@@ -298,10 +294,15 @@ class Component extends DCLogic {
   renderVals() {
     const s = this.state;
 
-    const totalEntradas = s.entradas.reduce((t, e) => t + Number(e.valor), 0);
-    const totalSaidas = s.saidas.reduce((t, e) => t + Number(e.valor), 0);
+    // Benefício é dinheiro de uso restrito e não fica na conta: crédito de
+    // vale e gasto no cartão de vale ficam de fora do saldo e da renda
+    // comprometida. O saldo aqui é o que dá para usar em qualquer coisa.
+    const entradasConta = s.entradas.filter(e => !e.carteira_id);
+    const saidasConta = s.saidas.filter(e => e.forma_pagamento !== 'vr' && !e.carteira_id);
+
+    const totalEntradas = entradasConta.reduce((t, e) => t + Number(e.valor), 0);
+    const totalSaidas = saidasConta.reduce((t, e) => t + Number(e.valor), 0);
     const saldo = totalEntradas - totalSaidas;
-    const saldoBeneficios = s.carteiras.reduce((t, c) => t + Number(c.saldo_atual || 0), 0);
 
     const pctComprometida = totalEntradas > 0
       ? Math.min(100, Math.round((totalSaidas / totalEntradas) * 100))
@@ -310,7 +311,7 @@ class Component extends DCLogic {
 
     // saídas por categoria, para o donut
     const porCat = {};
-    s.saidas.forEach(e => {
+    saidasConta.forEach(e => {
       const nome = (e.categorias && e.categorias.nome) || 'Sem categoria';
       const slug = (e.categorias && e.categorias.slug) || null;
       if (!porCat[nome]) porCat[nome] = { label: nome, slug: slug, value: 0 };
@@ -423,13 +424,7 @@ class Component extends DCLogic {
       // um saldo de -500 aparecia como R$ 500,00, igualzinho a um positivo.
       saldoTexto: (saldo < 0 ? '- R$ ' : 'R$ ') + formatBRL(saldo),
       saldoCor: saldo < 0 ? 'var(--color-alert)' : 'var(--text-primary)',
-      saldoLegenda: (saldo < 0 ? 'Saldo negativo · ' : 'Saldo disponível · ') + (s.period.label || ''),
-      // O saldo acima soma tudo que entrou e saiu, benefício incluído. Mas
-      // vale só compra comida, então o que está parado no cartão aparece
-      // em separado: senão o número da frente promete um dinheiro que não
-      // paga aluguel.
-      temBeneficio: saldoBeneficios > 0,
-      beneficioLegenda: 'R$ ' + formatBRL(saldoBeneficios) + ' nos cartões de benefício · só alimentação',
+      saldoLegenda: (saldo < 0 ? 'Saldo negativo em conta · ' : 'Saldo em conta · ') + (s.period.label || ''),
       pctComprometida,
       progressTone,
       progressCaption: `${pctComprometida}% da renda já comprometida este mês`,
