@@ -93,7 +93,7 @@
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;">
 
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Saídas por categoria" subtitle="Outubro 2026" hint-size="100%,260px">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Saídas por categoria" subtitle="{{ period.label }}" hint-size="100%,260px">
           <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
             <div style="{{ donutStyle }}"></div>
             <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:140px;">
@@ -128,7 +128,7 @@
           </div>
         </x-import>
 
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Dívidas em aberto" subtitle="3 maiores" hint-size="100%,260px">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Dívidas em aberto" subtitle="{{ dividasSubtitulo }}" hint-size="100%,260px">
           <div style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:700;font-size:28px;color:var(--color-alert);letter-spacing:-0.02em;">R$ {{ debtsTotalFormatted }}</div>
           <div>
             <sc-for list="{{ debts }}" as="d" hint-placeholder-count="3">
@@ -137,7 +137,7 @@
           </div>
         </x-import>
 
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Futuro" subtitle="3 cofrinhos ativos" hint-size="100%,260px">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Futuro" subtitle="{{ futuroSubtitulo }}" hint-size="100%,260px">
           <div style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:700;font-size:28px;color:var(--gold-700);letter-spacing:-0.02em;">R$ {{ futuroTotalFormatted }}</div>
           <div style="display:flex;flex-direction:column;gap:14px;">
             <sc-for list="{{ goals }}" as="g" hint-placeholder-count="3">
@@ -428,6 +428,11 @@ class Component extends DCLogic {
       pctComprometida,
       progressTone,
       progressCaption: `${pctComprometida}% da renda já comprometida este mês`,
+      // O card lista todas as dívidas em aberto, não as "3 maiores" que o
+      // protótipo prometia; o subtítulo passa a dizer o que está na tela.
+      dividasSubtitulo: emAberto.length === 0 ? 'nenhuma em aberto'
+        : emAberto.length === 1 ? '1 em aberto' : emAberto.length + ' em aberto',
+      futuroSubtitulo: s.cofrinhos.length === 1 ? '1 cofrinho' : s.cofrinhos.length + ' cofrinhos',
       categories,
       donutStyle: {
         width: 120, height: 120, borderRadius: '50%', flexShrink: 0,
