@@ -41,14 +41,27 @@
 
   // ------------------------------------------------------------- auth
   var auth = {
-    async entrarComPin(pin) {
+    /**
+     * Devolve `true` quando entrou. Se a casa exigir uma segunda senha,
+     * devolve { precisaSenha: true, casa, erro } em vez de estourar: não é
+     * falha, é o segundo passo. A conferência é toda no servidor — a senha
+     * não existe no código do site.
+     */
+    async entrarComPin(pin, senha) {
+      var envio = { pin: String(pin == null ? '' : pin) };
+      if (senha) envio.senha = String(senha);
       var resp = await fetch(SUPABASE_URL + '/functions/v1/pin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
-        body: JSON.stringify({ pin: String(pin == null ? '' : pin) }),
+        body: JSON.stringify(envio),
       });
       var corpo = await resp.json().catch(function () { return {}; });
-      if (!resp.ok) throw new Error(corpo.error || 'Não foi possível entrar.');
+      if (!resp.ok) {
+        if (corpo.precisa_senha) {
+          return { precisaSenha: true, casa: corpo.casa || '', erro: corpo.error || '' };
+        }
+        throw new Error(corpo.error || 'Não foi possível entrar.');
+      }
 
       var r = await sb.auth.setSession({
         access_token: corpo.access_token,

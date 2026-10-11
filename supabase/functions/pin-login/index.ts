@@ -90,15 +90,18 @@ Deno.serve(async (req) => {
 
   // --- confere o PIN ------------------------------------------------------
   let pin = "";
+  let senha = "";
   try {
-    pin = String((await req.json())?.pin ?? "");
+    const corpo = await req.json();
+    pin   = String(corpo?.pin ?? "");
+    senha = String(corpo?.senha ?? "");
   } catch {
     return json({ error: "Corpo inválido" }, 400);
   }
 
   // Procura a casa cujo PIN bate. A comparação é em tempo constante para
   // não vazar quantos dígitos acertaram.
-  const { data: casas } = await admin.from("casas").select("id, nome, pin, email");
+  const { data: casas } = await admin.from("casas").select("id, nome, pin, email, senha_hash");
   const casa = (casas ?? []).find((c) => iguais(pin, String(c.pin)));
 
   if (!casa) {
@@ -124,21 +127,61 @@ Deno.serve(async (req) => {
     );
   }
 
-  // --- PIN correto: devolve a sessão da conta daquela casa ---------------
-  const senha = await senhaDaCasa(casa.id);
+  // --- segunda senha, quando a casa exige -------------------------------
+  // O PIN sozinho não abre uma casa que tem senha_hash. O hash não sai do
+  // banco: `conferir_senha` compara lá dentro e devolve só true/false.
+  if (casa.senha_hash) {
+    if (!senha) {
+      // Ainda não é erro: é o segundo passo. Não conta como tentativa.
+      return json({ precisa_senha: true, casa: casa.nome }, 401);
+    }
+    const { data: confere } = await admin.rpc("conferir_senha", {
+      p_casa: casa.id,
+      p_senha: senha,
+    });
+    if (confere !== true) {
+      // Senha errada CONTA no throttle: sem isso a segunda senha seria
+      // só um incômodo, não uma tranca.
+      const falhas = (tentativa?.falhas ?? 0) + 1;
+      await admin.from("pin_tentativas").upsert({
+        ip,
+        falhas,
+        bloqueado_ate:
+          falhas >= MAX_FALHAS
+            ? new Date(Date.now() + BLOQUEIO_MIN * 60000).toISOString()
+            : null,
+        atualizado_em: new Date().toISOString(),
+      });
+      const restam = MAX_FALHAS - falhas;
+      return json(
+        {
+          precisa_senha: true,
+          casa: casa.nome,
+          error:
+            restam > 0
+              ? `Senha incorreta. ${restam} tentativa(s) restante(s).`
+              : `Senha incorreta. Acesso bloqueado por ${BLOQUEIO_MIN} min.`,
+        },
+        401,
+      );
+    }
+  }
+
+  // --- tudo certo: devolve a sessão da conta daquela casa ----------------
+  const senhaDaConta = await senhaDaCasa(casa.id);
   const EMAIL = casa.email;
   const anon = createClient(URL, ANON, { auth: { persistSession: false } });
 
   let { data: sessao, error } = await anon.auth.signInWithPassword({
     email: EMAIL,
-    password: senha,
+    password: senhaDaConta,
   });
 
   if (error) {
     // Primeiro acesso: a conta ainda não existe.
     const { error: erroCriar } = await admin.auth.admin.createUser({
       email: EMAIL,
-      password: senha,
+      password: senhaDaConta,
       email_confirm: true,
     });
 
@@ -148,12 +191,12 @@ Deno.serve(async (req) => {
       const { data: lista } = await admin.auth.admin.listUsers();
       const existente = lista?.users.find((u) => u.email === EMAIL);
       if (!existente) return json({ error: "Falha ao preparar a conta" }, 500);
-      await admin.auth.admin.updateUserById(existente.id, { password: senha });
+      await admin.auth.admin.updateUserById(existente.id, { password: senhaDaConta });
     }
 
     ({ data: sessao, error } = await anon.auth.signInWithPassword({
       email: EMAIL,
-      password: senha,
+      password: senhaDaConta,
     }));
     if (error) return json({ error: "Falha ao autenticar" }, 500);
   }

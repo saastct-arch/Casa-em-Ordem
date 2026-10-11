@@ -69,8 +69,18 @@
     </div>
     <div style="display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;">
       <h1 style="margin:0;font-family:var(--font-display);font-weight:800;font-size:26px;letter-spacing:-0.02em;color:var(--text-primary);">Casa em Ordem</h1>
-      <p style="margin:0;font-size:14px;color:var(--text-secondary);">Digite a senha da família</p>
+      <p style="margin:0;font-size:14px;color:var(--text-secondary);">{{ subtitulo }}</p>
     </div>
+    <sc-if value="{{ pedindoSenha }}" hint-placeholder-val="{{ false }}">
+      <div style="width:100%;display:flex;flex-direction:column;gap:10px;">
+        <input ref="{{ senhaRef }}" type="password" value="{{ senha }}" onChange="{{ onSenhaChange }}" onKeyDown="{{ onSenhaKeyDown }}"
+          autocomplete="current-password" aria-label="Senha da casa" placeholder="Senha"
+          style="width:100%;box-sizing:border-box;height:52px;padding:0 16px;font-family:var(--font-body);font-size:16px;color:var(--text-primary);background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-control);outline:none;"
+          style-focus="border-color:var(--color-primary);box-shadow:var(--focus-ring);"></input>
+        <button type="button" onClick="{{ onVoltar }}" style="align-self:center;background:none;border:none;cursor:pointer;font-family:var(--font-body);font-size:13px;color:var(--text-secondary);text-decoration:underline;">Usar outro PIN</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ !pedindoSenha }}" hint-placeholder-val="{{ true }}">
     <div style="{{ pinRowStyle }}">
       <sc-for list="{{ digits }}" as="d" hint-placeholder-count="4">
         <input ref="{{ d.ref }}" value="{{ d.value }}" onChange="{{ d.onChange }}" onKeyDown="{{ d.onKeyDown }}"
@@ -79,10 +89,11 @@
           style-focus="border-color:var(--color-primary);box-shadow:var(--focus-ring);"></input>
       </sc-for>
     </div>
+    </sc-if>
     <sc-if value="{{ error }}" hint-placeholder-val="{{ false }}">
       <span style="display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:var(--radius-pill);background:var(--color-alert-soft);color:var(--color-alert);font-size:13px;font-weight:600;">{{ errorMessage }}</span>
     </sc-if>
-    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSubmit }}" on-click="{{ onSubmit }}" hint-size="100%,48px">Entrar</x-import>
+    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" disabled="{{ !canSubmit }}" on-click="{{ onSubmit }}" hint-size="100%,48px">{{ rotuloBotao }}</x-import>
   </div>
 </div>
 </sc-if>
@@ -108,8 +119,11 @@ class Component extends DCLogic {
   state = {
     view: 'login', pin: ['', '', '', ''], shake: false,
     error: false, errorMessage: '', checking: false, loadingOpacity: 0,
+    // Casa que exige segunda senha: o PIN vira o primeiro de dois passos.
+    pedindoSenha: false, senha: '', casaDaSenha: '',
   };
   inputRefs = [React.createRef(), React.createRef(), React.createRef(), React.createRef()];
+  senhaRef = React.createRef();
 
   componentDidMount() {
     // Já entrou antes neste aparelho? Vai direto, sem pedir o PIN de novo.
@@ -141,26 +155,59 @@ class Component extends DCLogic {
   }
 
   recusar(mensagem) {
+    if (this.state.pedindoSenha) {
+      // Segunda senha errada: limpa só a senha e mantém o passo.
+      this.setState({ shake: true, error: true, errorMessage: mensagem, senha: '', checking: false });
+      setTimeout(() => this.setState({ shake: false }), 400);
+      setTimeout(() => this.senhaRef.current && this.senhaRef.current.focus(), 0);
+      return;
+    }
     this.setState({ shake: true, error: true, errorMessage: mensagem, pin: ['', '', '', ''], checking: false });
     setTimeout(() => this.setState({ shake: false }), 400);
     setTimeout(() => this.inputRefs[0].current && this.inputRefs[0].current.focus(), 0);
   }
 
+  voltarAoPin() {
+    this.setState({
+      pedindoSenha: false, senha: '', casaDaSenha: '',
+      pin: ['', '', '', ''], error: false, errorMessage: '', checking: false,
+    });
+    setTimeout(() => this.inputRefs[0].current && this.inputRefs[0].current.focus(), 0);
+  }
+
   async submit() {
     if (this.state.checking) return;
-    if (!this.state.pin.every(d => d !== '')) {
+    if (this.state.pedindoSenha && !this.state.senha) {
+      this.setState({ shake: true });
+      setTimeout(() => this.setState({ shake: false }), 400);
+      return;
+    }
+    if (!this.state.pedindoSenha && !this.state.pin.every(d => d !== '')) {
       this.setState({ shake: true });
       setTimeout(() => this.setState({ shake: false }), 400);
       return;
     }
 
-    // O PIN é conferido no servidor: a edge function devolve a sessão da
-    // conta compartilhada. Nada de senha no navegador.
+    // PIN e senha são conferidos no servidor: a edge function devolve a
+    // sessão da conta compartilhada. Nada de senha no navegador.
     this.setState({ checking: true, error: false, errorMessage: '' });
+    let r;
     try {
-      await Casa.auth.entrarComPin(this.state.pin.join(''));
+      r = await Casa.auth.entrarComPin(this.state.pin.join(''), this.state.senha);
     } catch (e) {
       this.recusar(e.message || 'Não foi possível entrar.');
+      return;
+    }
+
+    // Casa com segunda senha: o PIN bateu, falta a senha.
+    if (r && r.precisaSenha) {
+      this.setState({
+        pedindoSenha: true, casaDaSenha: r.casa || '', checking: false,
+        senha: '', error: !!r.erro, errorMessage: r.erro || '',
+        shake: !!r.erro,
+      });
+      if (r.erro) setTimeout(() => this.setState({ shake: false }), 400);
+      setTimeout(() => this.senhaRef.current && this.senhaRef.current.focus(), 0);
       return;
     }
 
@@ -184,7 +231,19 @@ class Component extends DCLogic {
       isLogin: this.state.view === 'login',
       isLoading: this.state.view === 'loading',
       digits,
-      canSubmit: pin.every(d => d !== '') && !this.state.checking,
+      canSubmit: (this.state.pedindoSenha
+        ? this.state.senha.length > 0
+        : pin.every(d => d !== '')) && !this.state.checking,
+      pedindoSenha: this.state.pedindoSenha,
+      senha: this.state.senha,
+      senhaRef: this.senhaRef,
+      onSenhaChange: (e) => this.setState({ senha: e.target.value, error: false, errorMessage: '' }),
+      onSenhaKeyDown: (e) => { if (e.key === 'Enter') this.submit(); },
+      onVoltar: () => this.voltarAoPin(),
+      subtitulo: this.state.pedindoSenha
+        ? (this.state.casaDaSenha ? 'Senha de ' + this.state.casaDaSenha : 'Digite a senha da casa')
+        : 'Digite a senha da família',
+      rotuloBotao: this.state.pedindoSenha ? 'Confirmar' : 'Entrar',
       error: this.state.error,
       errorMessage: this.state.errorMessage,
       onSubmit: () => this.submit(),
