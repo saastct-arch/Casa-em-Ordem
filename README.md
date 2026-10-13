@@ -32,6 +32,25 @@ sai do servidor nem volta a ser legível depois de criado. O cabeçalho lê o
 nome da casa pela view `minha_casa_info`, que expõe id, nome e permissões —
 nunca o PIN nem a senha.
 
+### Administração de acessos
+
+O acesso com `pode_admin` (hoje o `1202`) cria e governa os demais pelas
+RPCs `admin_*`. Criar um PIN cria uma casa nova, vazia, que mais ninguém
+enxerga.
+
+A tabela `casas` não é escrita por ninguém logado — nem pelo administrador.
+As regras moram no servidor: não dá para bloquear o próprio acesso, nem
+tirar a própria administração, nem deixar o sistema sem nenhum
+administrador ativo.
+
+O PIN nunca volta a ser legível depois de criado, e não existe função que o
+devolva. Esquecer significa criar outro.
+
+Excluir só vale para acesso sem histórico. Com lançamentos a função recusa e
+diz quantos são: apagar a casa apagaria a vida financeira de uma família.
+Nesses casos o caminho é bloquear, que tira o acesso na hora e preserva
+tudo.
+
 ### PF e PJ
 
 O mesmo razão atende os dois ambientes: cada lançamento tem uma coluna

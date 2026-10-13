@@ -538,6 +538,58 @@
     },
   };
 
+  // ------------------------------------------------- administração
+  /* Governo dos acessos, só para quem tem `pode_admin`. Tudo passa por RPC:
+   * a tabela `casas` não é escrita por ninguém logado, nem pelo
+   * administrador. Assim as regras — não ficar sem administrador, não se
+   * bloquear sozinho, PIN que nunca volta a ser legível — moram no
+   * servidor, e não numa tela que dá para contornar.
+   *
+   * Cada acesso é uma casa com dados próprios: criar o PIN da família
+   * Ribeiro cria a casa dela, vazia, que mais ninguém enxerga.
+   */
+  var acessos = {
+    /** Nome, permissões, estado e quantos lançamentos tem. Nunca o PIN. */
+    async listar() {
+      return ok(await sb.rpc('admin_acessos'));
+    },
+
+    /** Devolve o id do acesso novo. O PIN não volta: some depois daqui. */
+    async criar(o) {
+      return ok(await sb.rpc('admin_criar_acesso', {
+        p_nome: o.nome,
+        p_pin: String(o.pin == null ? '' : o.pin),
+        p_pode_pf: o.podePF !== false,
+        p_pode_pj: !!o.podePJ,
+      }));
+    },
+
+    async definirPermissoes(id, o) {
+      return ok(await sb.rpc('admin_definir_permissoes', {
+        p_casa: id,
+        p_pode_pf: o.podePF,
+        p_pode_pj: o.podePJ,
+        p_pode_admin: o.podeAdmin == null ? null : !!o.podeAdmin,
+      }));
+    },
+
+    /** Bloquear não apaga nada: tira o acesso na hora e guarda o histórico. */
+    async definirBloqueio(id, bloqueado) {
+      return ok(await sb.rpc('admin_definir_bloqueio', {
+        p_casa: id, p_bloqueado: !!bloqueado,
+      }));
+    },
+
+    /**
+     * Só sai acesso sem histórico — cadastro errado, recém-criado. Com
+     * lançamentos a função recusa e diz quantos são; o caminho ali é
+     * bloquear.
+     */
+    async excluir(id) {
+      return ok(await sb.rpc('admin_excluir_acesso', { p_casa: id }));
+    },
+  };
+
   // -------------------------------------------------------- realtime
   /**
    * Avisa quando alguém da família mexe nos dados, para a tela atualizar
@@ -582,6 +634,7 @@
     entradas: entradas,
     saidas: saidas,
     faturas: faturas,
+    acessos: acessos,
     aoMudar: aoMudar,
   };
 })();
