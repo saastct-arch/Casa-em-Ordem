@@ -73,7 +73,7 @@
   </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:300,&quot;height&quot;:44},&quot;mode&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;'mes'|'ano'|'periodo'&quot;},&quot;month&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;year&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;label&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;onChange&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(v:any)=&gt;void&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:300,&quot;height&quot;:44},&quot;mode&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;'mes'|'ano'|'periodo'&quot;},&quot;month&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;year&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;label&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;onChange&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(v:any)=&gt;void&quot;}">
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
@@ -96,7 +96,7 @@ class Component extends DCLogic {
 
   selectMonth(m) {
     const year = this.state.tempYear;
-    this.emit({ mode: 'mes', month: m, year, label: `${MESES[m]} ${year}` });
+    this.emit({ mode: 'mes', month: m, year, label: `${MESES_ABREV[m]} ${year}` });
     this.setState({ open: false });
   }
   applyAno() {
@@ -119,7 +119,9 @@ class Component extends DCLogic {
     const s = this.state;
     const p = this.props;
     const mode = p.mode || 'mes';
-    const label = p.label || `${MESES[p.month ?? new Date().getMonth()]} ${p.year ?? new Date().getFullYear()}`;
+    const label = mode === 'mes'
+      ? `${MESES_ABREV[p.month ?? new Date().getMonth()]} ${p.year ?? new Date().getFullYear()}`
+      : (p.label || `${MESES[p.month ?? new Date().getMonth()]} ${p.year ?? new Date().getFullYear()}`);
 
     // Presets a partir de hoje, não de uma data fixa do protótipo.
     const today = new Date();
