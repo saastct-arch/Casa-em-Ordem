@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel da empresa · Casa em Ordem</title>
+<meta name="description" content="As finanças da atividade profissional, em um lugar só.">
+<meta name="theme-color" content="#0E6E5B">
+<link rel="canonical" href="https://casa-em-ordem-psi.vercel.app/Empresa.dc.html">
+
+<!-- marca e compartilhamento -->
+<link rel="icon" href="/icon.svg?v=2" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico?v=2" sizes="16x16 32x32 48x48">
+<link rel="shortcut icon" href="/favicon.ico?v=2">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Casa em Ordem">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Casa em Ordem">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="Painel da empresa · Casa em Ordem">
+<meta property="og:description" content="As finanças da atividade profissional, em um lugar só.">
+<meta property="og:url" content="https://casa-em-ordem-psi.vercel.app/Empresa.dc.html">
+<meta property="og:image" content="https://casa-em-ordem-psi.vercel.app/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Casa em Ordem — as finanças da atividade profissional">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Painel da empresa · Casa em Ordem">
+<meta name="twitter:description" content="As finanças da atividade profissional, em um lugar só.">
+<meta name="twitter:image" content="https://casa-em-ordem-psi.vercel.app/og-image.png">
+
+<script src="./app/guard.js"></script>
+<script src="./support.js"></script>
+<script src="./app/vendor/supabase.umd.js"></script>
+<script src="./app/casa.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/tokens/base.css">
+  <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
+  <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
+  <script src="./app/nav.js"></script>
+  <script src="./app/ui.js"></script>
+  <style>
+    body{margin:0;}
+    a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
+  </style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:var(--bg-app);font-family:var(--font-body);">
+  <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Sidebar" active="painel" on-select="{{ onNavigate }}" hint-size="248px,100%" style="position:sticky;top:0;height:100vh;"></x-import>
+  </sc-if>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <div style="flex:1;width:100%;max-width:var(--content-max);margin:0 auto;box-sizing:border-box;padding:{{ contentPadding }};display:flex;flex-direction:column;gap:20px;">
+
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MenuButton" on-click="{{ onAbrirMenu }}" hint-size="40px,40px"></x-import></sc-if>
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.AppHeader" eyebrow="{{ casaNome }}" title="Painel da empresa" show-period="{{ false }}" on-settings="{{ onSettings }}" compact="{{ !isDesktop }}" style="flex:1;" hint-size="100%,60px"></x-import>
+        <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
+      </div>
+
+      <x-import component-from-global-scope="CasaUI.FaixaErro" erro="{{ erro }}" on-tentar="{{ onRecarregar }}"></x-import>
+
+      <!-- O QUE EXISTE HOJE: caixa, e o que ainda vai entrar e sair -->
+      <div style="display:grid;grid-template-columns:{{ colunasKpi }};gap:14px;">
+        <x-import component-from-global-scope="CasaUI.Indicador" rotulo="Saldo em caixa" icone="wallet"
+          valor="{{ caixaTexto }}" cor="{{ caixaCor }}" grande="{{ isDesktop }}" detalhe="{{ caixaDetalhe }}"
+          hint-size="100%,140px"></x-import>
+        <x-import component-from-global-scope="CasaUI.Indicador" rotulo="A receber" icone="arrow-down-left"
+          valor="{{ aReceberTexto }}" detalhe="{{ aReceberDetalhe }}" hint-size="100%,140px"></x-import>
+        <x-import component-from-global-scope="CasaUI.Indicador" rotulo="A pagar" icone="arrow-up-right"
+          valor="{{ aPagarTexto }}" cor="{{ aPagarCor }}" detalhe="{{ aPagarDetalhe }}" hint-size="100%,140px"></x-import>
+        <x-import component-from-global-scope="CasaUI.Indicador" rotulo="Saldo projetado" icone="trending-up"
+          valor="{{ projetadoTexto }}" cor="{{ projetadoCor }}" detalhe="Caixa + a receber − a pagar" hint-size="100%,140px"></x-import>
+      </div>
+
+      <!-- O QUE ACONTECEU NO PERÍODO: só dinheiro que de fato se mexeu -->
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Resultado do período" subtitle="{{ resultadoSubtitulo }}" hint-size="100%,auto">
+        <div style="display:grid;grid-template-columns:{{ colunasResultado }};gap:14px;">
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <span style="font-size:var(--fs-small);color:var(--text-secondary);font-weight:600;">Receitas recebidas</span>
+            <span class="num" style="font-size:var(--fs-money-lg);font-weight:600;color:var(--money-in);">{{ recebidoTexto }}</span>
+            <span style="font-size:var(--fs-caption);color:var(--text-muted);">{{ recebidoDetalhe }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <span style="font-size:var(--fs-small);color:var(--text-secondary);font-weight:600;">Despesas pagas</span>
+            <span class="num" style="font-size:var(--fs-money-lg);font-weight:600;color:var(--text-primary);">{{ pagoTexto }}</span>
+            <span style="font-size:var(--fs-caption);color:var(--text-muted);">{{ pagoDetalhe }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <span style="font-size:var(--fs-small);color:var(--text-secondary);font-weight:600;">Resultado</span>
+            <span class="num" style="font-size:var(--fs-money-lg);font-weight:600;color:{{ resultadoCor }};">{{ resultadoTexto }}</span>
+            <span style="font-size:var(--fs-caption);color:var(--text-muted);">recebido menos pago</span>
+          </div>
+        </div>
+      </x-import>
+
+      <!-- ALERTAS: só o que exige uma decisão hoje -->
+      <sc-if value="{{ temAlertas }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <sc-for list="{{ alertas }}" as="a" hint-placeholder-count="2">
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-control);background:{{ a.fundo }};color:{{ a.cor }};">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="{{ a.icone }}" size="18" hint-size="18px,18px"></x-import>
+              <span style="flex:1;min-width:0;font-size:var(--fs-body);font-weight:600;">{{ a.texto }}</span>
+              <span class="num" style="font-size:var(--fs-body);font-weight:700;">{{ a.valor }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <div style="display:grid;grid-template-columns:{{ colunasListas }};gap:16px;">
+        <!-- PRÓXIMOS VENCIMENTOS -->
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Contas a pagar" subtitle="{{ aPagarSubtitulo }}" hint-size="100%,auto">
+          <sc-if value="{{ temContasAPagar }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ contasAPagar }}" as="c" hint-placeholder-count="3">
+                <div class="casa-linha" style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--border-default);">
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                    <span style="font-size:var(--fs-body);font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.descricao }}</span>
+                    <span style="font-size:var(--fs-caption);color:var(--text-secondary);">{{ c.quando }}</span>
+                  </div>
+                  <x-import component-from-global-scope="CasaUI.Selo" status="{{ c.selo }}" hint-size="80px,24px"></x-import>
+                  <span class="num" style="font-size:var(--fs-money);font-weight:700;color:var(--text-primary);">{{ c.valor }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ !temContasAPagar }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="check" title="Nada a pagar" description="Nenhuma conta da empresa em aberto." hint-size="100%,160px"></x-import>
+          </sc-if>
+        </x-import>
+
+        <!-- A RECEBER -->
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Contas a receber" subtitle="{{ aReceberSubtitulo }}" hint-size="100%,auto">
+          <sc-if value="{{ temAReceber }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ listaAReceber }}" as="r" hint-placeholder-count="3">
+                <div class="casa-linha" style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--border-default);">
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                    <span style="font-size:var(--fs-body);font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.descricao }}</span>
+                    <span style="font-size:var(--fs-caption);color:var(--text-secondary);">{{ r.quando }}</span>
+                  </div>
+                  <x-import component-from-global-scope="CasaUI.Selo" status="{{ r.selo }}" hint-size="80px,24px"></x-import>
+                  <span class="num" style="font-size:var(--fs-money);font-weight:700;color:var(--money-in);">{{ r.valor }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ !temAReceber }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="inbox" title="Nada a receber" description="Lance uma receita com vencimento para acompanhá-la aqui." hint-size="100%,160px"></x-import>
+          </sc-if>
+        </x-import>
+      </div>
+
+    </div>
+
+    <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.NavDrawer" open="{{ menuAberto }}" active="painel" on-select="{{ onNavigate }}" on-settings="{{ onSettings }}" on-close="{{ onFecharMenu }}"></x-import>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+/* Painel da empresa.
+ *
+ * O que esta tela não faz, de propósito: somar entrada menos saída do mês
+ * e chamar aquilo de saldo. São perguntas diferentes e a resposta errada
+ * promete dinheiro que não existe.
+ *
+ *   saldo em caixa  — o que existe hoje
+ *   a receber/pagar — o que ainda vai se mexer
+ *   saldo projetado — os dois juntos
+ *   resultado       — só o que de fato entrou e saiu no período
+ *
+ * Todos os números vêm do banco (`caixa_resumo`), não de uma soma feita
+ * aqui: a mesma conta em dois lugares vira duas contas diferentes.
+ */
+const UI = () => window.CasaUI;
+
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function mesAtualPeriod() {
+  const d = new Date();
+  return { mode: 'mes', month: d.getMonth(), year: d.getFullYear(), label: `${MESES[d.getMonth()]} ${d.getFullYear()}` };
+}
+const num = (v) => Number(v || 0);
+
+class Component extends DCLogic {
+  state = {
+    isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    menuAberto: false,
+    period: mesAtualPeriod(),
+    casaNome: '',
+    caixa: null,
+    entradas: [],
+    saidas: [],
+    aPagar: [],
+    aReceber: [],
+    hoje: '',
+    erro: '',
+  };
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ isDesktop: window.innerWidth >= 900 });
+    window.addEventListener('resize', this.onResize);
+    // Esta tela é do ambiente empresarial: o resto da camada de dados passa
+    // a filtrar por ele a partir daqui.
+    if (window.Casa && Casa.ambiente) Casa.ambiente.definir('pj');
+    this.carregar();
+    this.pararEscuta = Casa.aoMudar(
+      ['entradas', 'saidas', 'pagamentos', 'recebimentos', 'contas', 'transferencias'],
+      () => this.carregar());
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.onResize);
+    this.pararEscuta && this.pararEscuta();
+  }
+
+  async carregar() {
+    if (!(await Casa.auth.exigirSessao())) return;
+    try {
+      if (!this.state.casaNome) {
+        const casa = await Casa.casaAtual();
+        // Sem permissão de PJ não há o que mostrar aqui. Quem barra de
+        // verdade é a RLS — isto só evita a tela vazia e sem explicação.
+        if (!casa.pode_pj) { window.location.href = 'Resumo.dc.html'; return; }
+        this.setState({ casaNome: casa.nome });
+      }
+
+      const [caixa, entradas, saidas, hoje] = await Promise.all([
+        Casa.caixaResumo(),
+        Casa.entradas.doPeriodo(this.state.period),
+        Casa.saidas.doPeriodo(this.state.period),
+        Casa.hoje(),
+      ]);
+
+      // Em aberto é o que ainda vai se mexer — fora do período, porque uma
+      // conta vencida em agosto continua sendo um problema em outubro.
+      const [aPagar, aReceber] = await Promise.all([
+        Casa.saidas.listar({ /* todas */ }),
+        Casa.entradas.listar({}),
+      ]);
+
+      this.setState({
+        caixa, entradas, saidas, hoje, erro: '',
+        aPagar: (aPagar || []).filter(s =>
+          !s.cancelado && !s.revisar && (s.status === 'pendente' || s.status === 'parcial')),
+        aReceber: (aReceber || []).filter(e =>
+          !e.cancelado && (e.status === 'previsto' || e.status === 'parcial')),
+      });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  renderVals() {
+    const s = this.state;
+    const ui = UI();
+    const brl = ui ? ui.brl : (v) => 'R$ ' + num(v).toFixed(2);
+    const c = s.caixa || {};
+
+    // --- o que existe e o que ainda vai se mexer ---------------------
+    const caixa = num(c.saldo_caixa);
+    const aReceber = num(c.a_receber);
+    const aPagar = num(c.a_pagar);
+    const vencido = num(c.vencido);
+    const faturas = num(c.faturas_abertas);
+    const aRevisar = num(c.a_revisar);
+    const projetado = num(c.saldo_projetado);
+
+    // --- o que de fato se mexeu no período ---------------------------
+    // Recebido e pago, não lançado: é a diferença entre o resultado e uma
+    // promessa.
+    const recebido = s.entradas.reduce((t, e) => t + num(e.valor_recebido), 0);
+    const pago = s.saidas.reduce((t, x) => t + num(x.valor_pago), 0);
+    const lancadoEntradas = s.entradas.reduce((t, e) => t + num(e.valor), 0);
+    const lancadoSaidas = s.saidas.reduce((t, x) => t + num(x.valor), 0);
+    const resultado = recebido - pago;
+
+    const alertas = [];
+    if (vencido > 0) alertas.push({
+      icone: 'triangle-alert', texto: 'Contas vencidas e ainda não pagas',
+      valor: brl(vencido), cor: 'var(--color-alert)', fundo: 'var(--color-alert-soft)',
+    });
+    if (faturas > 0) alertas.push({
+      icone: 'receipt-text', texto: 'Faturas de cartão em aberto',
+      valor: brl(faturas), cor: 'var(--gold-700)', fundo: 'var(--color-accent-soft)',
+    });
+    if (aRevisar > 0) alertas.push({
+      icone: 'help-circle', texto: 'Lançamentos antigos esperando confirmação de pagamento',
+      valor: brl(aRevisar), cor: 'var(--gold-700)', fundo: 'var(--color-accent-soft)',
+    });
+
+    const quando = (venc) => {
+      if (!venc) return 'sem vencimento';
+      if (!s.hoje) return 'vence em ' + (ui ? ui.data(venc) : venc);
+      if (venc < s.hoje) return 'venceu em ' + (ui ? ui.data(venc) : venc);
+      if (venc === s.hoje) return 'vence hoje';
+      return 'vence em ' + (ui ? ui.data(venc) : venc);
+    };
+    const seloDe = (linha, pago) => {
+      if (!pago && Casa.vencida(linha, s.hoje)) return 'vencida';
+      return linha.status;
+    };
+
+    const ordenaPorVencimento = (a, b) =>
+      String(a.vencimento || '9999').localeCompare(String(b.vencimento || '9999'));
+
+    const contasAPagar = s.aPagar.slice().sort(ordenaPorVencimento).slice(0, 6).map(x => ({
+      descricao: x.descricao,
+      quando: quando(x.vencimento),
+      valor: brl(num(x.saldo)),
+      selo: seloDe(x, false),
+    }));
+    const listaAReceber = s.aReceber.slice().sort(ordenaPorVencimento).slice(0, 6).map(e => ({
+      descricao: e.descricao,
+      quando: quando(e.vencimento),
+      valor: brl(num(e.saldo)),
+      selo: e.status,
+    }));
+
+    const plural = (n, um, muitos) => n === 1 ? `1 ${um}` : `${n} ${muitos}`;
+
+    return {
+      isDesktop: s.isDesktop,
+      menuAberto: s.menuAberto,
+      period: s.period,
+      casaNome: s.casaNome,
+      erro: s.erro,
+      contentPadding: s.isDesktop ? '28px 32px 40px' : '16px 16px 32px',
+      colunasKpi: s.isDesktop ? 'repeat(4, minmax(0,1fr))' : 'repeat(2, minmax(0,1fr))',
+      colunasResultado: s.isDesktop ? 'repeat(3, minmax(0,1fr))' : '1fr',
+      colunasListas: s.isDesktop ? 'repeat(2, minmax(0,1fr))' : '1fr',
+
+      caixaTexto: brl(caixa),
+      caixaCor: caixa < 0 ? 'var(--color-alert)' : 'var(--text-primary)',
+      caixaDetalhe: c.qtd_contas > 0
+        ? plural(c.qtd_contas, 'conta cadastrada', 'contas cadastradas')
+        : 'entrou menos saiu — cadastre uma conta para partir do saldo real',
+
+      aReceberTexto: brl(aReceber),
+      aReceberDetalhe: plural(s.aReceber.length, 'cobrança em aberto', 'cobranças em aberto'),
+
+      aPagarTexto: brl(aPagar),
+      aPagarCor: vencido > 0 ? 'var(--color-alert)' : 'var(--text-primary)',
+      aPagarDetalhe: vencido > 0 ? brl(vencido) + ' já vencido'
+                                 : plural(s.aPagar.length, 'conta em aberto', 'contas em aberto'),
+
+      projetadoTexto: brl(projetado),
+      projetadoCor: projetado < 0 ? 'var(--color-alert)' : 'var(--text-primary)',
+
+      resultadoSubtitulo: 'Só o dinheiro que se mexeu · ' + (s.period.label || ''),
+      recebidoTexto: brl(recebido),
+      recebidoDetalhe: lancadoEntradas > recebido
+        ? brl(lancadoEntradas - recebido) + ' ainda previsto' : 'tudo recebido',
+      pagoTexto: brl(pago),
+      pagoDetalhe: lancadoSaidas > pago
+        ? brl(lancadoSaidas - pago) + ' ainda em aberto' : 'tudo pago',
+      resultadoTexto: (resultado < 0 ? '- ' : '') + brl(Math.abs(resultado)),
+      resultadoCor: resultado < 0 ? 'var(--color-alert)' : 'var(--money-in)',
+
+      alertas,
+      temAlertas: alertas.length > 0,
+
+      contasAPagar,
+      temContasAPagar: contasAPagar.length > 0,
+      aPagarSubtitulo: s.aPagar.length > contasAPagar.length
+        ? `as ${contasAPagar.length} mais próximas de ${s.aPagar.length}`
+        : plural(s.aPagar.length, 'conta em aberto', 'contas em aberto'),
+
+      listaAReceber,
+      temAReceber: listaAReceber.length > 0,
+      aReceberSubtitulo: s.aReceber.length > listaAReceber.length
+        ? `as ${listaAReceber.length} mais próximas de ${s.aReceber.length}`
+        : plural(s.aReceber.length, 'cobrança em aberto', 'cobranças em aberto'),
+
+      onAbrirMenu: () => this.setState({ menuAberto: true }),
+      onFecharMenu: () => this.setState({ menuAberto: false }),
+      onNavigate: (id) => window.CasaNav.irPara(id),
+      onSettings: () => { window.location.href = 'Configurações.dc.html'; },
+      onRecarregar: () => this.carregar(),
+      onPeriodChange: (p) => this.setState({ period: p }, () => this.carregar()),
+    };
+  }
+}
+</script>
+</body>
+</html>

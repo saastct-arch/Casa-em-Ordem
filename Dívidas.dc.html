@@ -52,6 +52,7 @@
   <link rel="stylesheet" href="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/styles.css">
   <script src="_ds/casa-em-ordem-design-system-c1605311-cb86-401f-a1cb-a53bd9162a8b/_ds_bundle.js"></script>
   <script src="./app/nav.js"></script>
+  <script src="./app/ui.js"></script>
   <style>
     body{margin:0;}
     a{color:var(--color-primary);} a:hover{color:var(--color-primary-hover);}
@@ -205,7 +206,6 @@ function hojeISO() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
-const NAV_MAP = { resumo: 'Resumo.dc.html', entradas: 'Entradas.dc.html', saidas: 'Saídas.dc.html', dividas: 'Dívidas.dc.html', futuro: 'Futuro.dc.html', faturas: 'Faturas.dc.html', beneficios: 'Benefícios.dc.html' };
 
 class Component extends DCLogic {
   state = {
@@ -463,7 +463,9 @@ class Component extends DCLogic {
       erro: this.state.erro,
       onAbrirMenu: () => this.setState({ menuAberto: true }),
       onFecharMenu: () => this.setState({ menuAberto: false }),
-      onNavigate: (id) => { if (NAV_MAP[id]) window.location.href = NAV_MAP[id]; },
+      // o mapa de destinos mora no app/nav.js: com dois ambientes, uma
+      // cópia por tela viraria dezesseis para esquecer de atualizar
+      onNavigate: (id) => window.CasaNav.irPara(id),
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },
       form: f,
       onNomeChange: (v) => this.setForm({ nome: v }),

@@ -71,6 +71,63 @@ já significava que o dinheiro saiu). Boletos vencidos sem evidência de
 pagamento ficaram com `revisar = true`: aparecem para a família confirmar e
 ficam de fora dos alertas, para o app não alarmar sobre palpite dele mesmo.
 
+### Como o PF e o PJ aparecem na tela
+
+O seletor fica na barra lateral, logo abaixo da marca e com peso menor que
+ela. É um controle segmentado e não um menu suspenso: são duas opções, e a
+pessoa precisa saber de relance em qual dinheiro está mexendo.
+
+Ele só aparece para quem tem os dois ambientes. Esconder botão não é
+controle de acesso — quem barra continua sendo a RLS —, é só não oferecer o
+que não abre.
+
+**Quatro telas servem aos dois lados.** Entradas, Saídas, Dívidas e Faturas
+filtram por ambiente desde que o banco passou a separá-los; no PJ elas só
+mudam de nome (Receitas, Despesas, Empréstimos, Cartões). Benefícios e
+Futuro não aparecem no PJ de propósito: vale-refeição e cofrinho são
+conceitos da casa, não da empresa.
+
+**A URL manda sobre o que está guardado.** Abrir o painel da empresa por
+link, favorito ou aba restaurada traz o menu da empresa já na primeira
+pintura, em vez de a tela carregar errada e se corrigir depois.
+
+### Mexer no design system sem tocar no bundle
+
+O `_ds/` é saída compilada: editá-lo à mão quebraria na próxima geração.
+Três amarrações resolvem isso sem uma linha alterada lá dentro:
+
+- `NAV_ITEMS` é um array exportado, e é a **mesma referência** que o Sidebar
+  percorre. Trocar de ambiente reescreve o conteúdo no lugar (`length = 0` e
+  `push`), nunca substitui o array — substituir deixaria o Sidebar preso no
+  menu antigo.
+- `NS.Sidebar` é interceptado por uma versão que copia os estilos do
+  original valor por valor, dos mesmos tokens, e acrescenta o seletor entre
+  a marca e a navegação. Reimplementar foi a saída porque o componente
+  compilado não aceita conteúdo no meio dele; empilhar o seletor acima da
+  marca o deixaria disputando o topo com o nome do produto.
+- O roteamento mora em `app/nav.js`. Antes cada tela tinha a sua cópia do
+  mapa de destinos; com dois ambientes isso viraria dezesseis cópias para
+  esquecer de atualizar.
+
+### Cores de gráfico
+
+As cores de categoria do design system (`--cat-casa` e companhia) são ótimas
+nos chips, onde o nome está escrito do lado. Em gráfico elas falham: o azul,
+o cinza-ardósia e o cinza-quente ficam a ΔE 4–7 um do outro — abaixo do piso
+em que mesmo quem enxerga todas as cores ainda distingue um do outro, e bem
+abaixo do que sobrevive a daltonismo.
+
+`app/ui.js` traz uma paleta da mesma família de matizes, em degraus mais
+saturados, validada nos seis testes (faixa de luminosidade, piso de croma,
+separação sob protanopia/deuteranopia/tritanopia, piso de visão normal e
+contraste contra o cartão) nas sete posições. A ordem é fixa: cor segue a
+entidade, nunca a posição no ranking — filtrar uma série não pode repintar
+as que sobraram.
+
+Situação (pago, vencido, em aberto) usa cores reservadas, que nunca viram
+"série 4", e vai **sempre com ícone e palavra**: quem não distingue verde de
+vermelho continua lendo a tela.
+
 ### Retirada e aporte: o dinheiro que atravessa a fronteira
 
 O dono tira dinheiro da empresa para viver e às vezes põe do bolso para ela
