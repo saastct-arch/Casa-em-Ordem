@@ -219,6 +219,41 @@
     };
   }
 
+  // ----------------------------------------------------- data de hoje
+  /* "Vencida" depende de que dia é hoje — e o banco roda em UTC. Depois
+   * das 21h de Brasília o "hoje" do servidor já é o amanhã daqui, e uma
+   * conta apareceria vencida antes da hora. A função `hoje()` do banco
+   * devolve a data no fuso de São Paulo; o navegador pergunta uma vez por
+   * carregamento e reusa.
+   */
+  var hojeCache = null;
+  async function hoje() {
+    if (hojeCache) return hojeCache;
+    var r = await sb.rpc('hoje');
+    // Sem rede ainda não é motivo para a tela não abrir: cai no relógio
+    // local, que para quem usa o app é o mesmo fuso.
+    hojeCache = (r && !r.error && r.data) ? r.data : localIso(new Date());
+    return hojeCache;
+  }
+  function localIso(d) {
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
+  /**
+   * Vencida é vencimento no passado com saldo em aberto — nunca um estado
+   * guardado, que ficaria mentindo quando o dia virasse. `revisar` fica de
+   * fora: é histórico migrado que ninguém confirmou, e alarmar sobre ele
+   * seria alarmar sobre palpite do próprio sistema.
+   */
+  function vencida(lanc, dia) {
+    if (!lanc || !lanc.vencimento) return false;
+    if (lanc.revisar) return false;
+    if (lanc.status !== 'pendente' && lanc.status !== 'parcial') return false;
+    return lanc.vencimento < (dia || hojeCache || localIso(new Date()));
+  }
+
   // ------------------------------------------------------------ CRUD
   function tabela(nome, ordem) {
     ordem = ordem || { coluna: 'created_at', crescente: false };
@@ -423,7 +458,29 @@
     },
   });
 
+  // Baixas: a obrigação é a linha de entradas/saidas, o movimento de caixa
+  // é a linha de recebimentos/pagamentos. Tudo por RPC porque as regras
+  // (quanto falta, o que pode ser pago) são do servidor.
   var entradas = Object.assign(tabela('entradas', { coluna: 'data', crescente: false }), {
+    /** Sem valor, recebe o que falta. */
+    async receber(id, o) {
+      o = o || {};
+      return ok(await sb.rpc('registrar_recebimento', {
+        p_entrada: id,
+        p_valor: o.valor == null ? null : o.valor,
+        p_data: o.data || null,
+        p_forma: o.forma || null,
+        p_observacao: o.observacao || null,
+      }));
+    },
+    /** Estornar não apaga: marca, e o histórico continua contando. */
+    async estornarRecebimento(id) {
+      return ok(await sb.rpc('estornar_recebimento', { p_recebimento: id }));
+    },
+    async recebimentos(entradaId) {
+      return ok(await de('recebimentos').select('*')
+        .eq('entrada_id', entradaId).order('data', { ascending: false }));
+    },
     async doPeriodo(p) {
       var r = periodoRange(p);
       return ok(await de('entradas')
@@ -435,6 +492,40 @@
 
   // ---------------------------------------------------------- saídas
   var saidas = Object.assign(tabela('saidas', { coluna: 'data', crescente: false }), {
+    /** Sem valor, paga o que falta — que é o caminho de quase sempre. */
+    async pagar(id, o) {
+      o = o || {};
+      return ok(await sb.rpc('registrar_pagamento', {
+        p_saida: id,
+        p_valor: o.valor == null ? null : o.valor,
+        p_data: o.data || null,
+        p_forma: o.forma || null,
+        p_observacao: o.observacao || null,
+      }));
+    },
+    async estornarPagamento(id) {
+      return ok(await sb.rpc('estornar_pagamento', { p_pagamento: id }));
+    },
+    async pagamentos(saidaId) {
+      return ok(await de('pagamentos').select('*')
+        .eq('saida_id', saidaId).order('data', { ascending: false }));
+    },
+    /** Para a obrigação que deixou de existir. Não apaga o registro. */
+    async cancelar(id, cancelado) {
+      return ok(await sb.rpc('cancelar_saida', {
+        p_saida: id, p_cancelado: cancelado !== false,
+      }));
+    },
+    /**
+     * Histórico migrado que o sistema não quis adivinhar: a família diz se
+     * aquele boleto antigo foi pago. Sim vira baixa na data do vencimento;
+     * não só tira a marca e deixa a conta em aberto.
+     */
+    async confirmarRevisao(id, foiPago) {
+      return ok(await sb.rpc('confirmar_revisao', {
+        p_saida: id, p_foi_pago: !!foiPago,
+      }));
+    },
     /**
      * Boletos de um intervalo de vencimento. Consulta a tabela `saidas`, e é
      * daqui que Resumo e Faturas a chamam — estava em `faturas` por engano, e
@@ -624,6 +715,8 @@
     auth: auth,
     casaAtual: casaAtual,
     ambiente: ambiente,
+    hoje: hoje,
+    vencida: vencida,
     periodoRange: periodoRange,
     membros: membros,
     categorias: categorias,

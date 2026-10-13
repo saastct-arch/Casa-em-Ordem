@@ -32,6 +32,45 @@ sai do servidor nem volta a ser legível depois de criado. O cabeçalho lê o
 nome da casa pela view `minha_casa_info`, que expõe id, nome e permissões —
 nunca o PIN nem a senha.
 
+### Obrigação e saída de caixa não são a mesma coisa
+
+A linha de `saidas` é a **obrigação** (quanto se deve, de que competência,
+quando vence). Cada linha de `pagamentos` é uma **saída de caixa** (quanto
+saiu, quando). `valor_pago` é a soma dos pagamentos não estornados, mantida
+por trigger — não é um número que a tela escreve e pode divergir. `status` é
+coluna gerada a partir disso, então não existe linha com status incoerente
+com os próprios valores:
+
+| status | quando |
+|---|---|
+| `pendente` | nada pago |
+| `parcial` | pago em parte |
+| `pago` | quitada |
+| `cancelado` | obrigação que deixou de existir |
+| `fatura` | compra no crédito: quem paga é a fatura |
+
+**Vencida não é guardado.** É vencimento no passado com saldo em aberto,
+calculado na hora, na data de São Paulo (`hoje()`). Guardar exigiria alguém
+passando de madrugada para virar o estado, e um registro parado ficaria
+mentindo.
+
+**Compra no crédito é despesa, mas não é saída de caixa** — quem paga é a
+fatura. Por isso tem status próprio e a função de baixa recusa pagá-la uma a
+uma: contaria o mesmo dinheiro duas vezes.
+
+**O que já nasce pago.** Lançar "almoço, pix" não é agendar um pagamento: é
+registrar que o dinheiro foi. Dinheiro, débito, pix e VR ganham baixa
+automática no próprio lançamento. Com `vencimento` preenchido, não — aí é um
+pagamento combinado para depois, e fica pendente até alguém dar a baixa.
+
+**Estornar não apaga**, marca. O movimento errado continua no histórico com
+a data em que foi desfeito.
+
+**O histórico migrado.** Pix, débito e VR antigos viraram pagos (lançá-los
+já significava que o dinheiro saiu). Boletos vencidos sem evidência de
+pagamento ficaram com `revisar = true`: aparecem para a família confirmar e
+ficam de fora dos alertas, para o app não alarmar sobre palpite dele mesmo.
+
 ### Administração de acessos
 
 O acesso com `pode_admin` (hoje o `1202`) cria e governa os demais pelas
