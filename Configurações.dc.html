@@ -139,6 +139,63 @@
         </sc-if>
       </x-import>
 
+      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Contas" subtitle="{{ contasSubtitulo }}" hint-size="100%,360px" style="gap:16px;">
+        <span style="font-size:13px;color:var(--text-secondary);">
+          Enquanto não houver conta cadastrada, o Resumo mostra "entrou menos
+          saiu desde que vocês usam o app". Com as contas, ele passa a mostrar
+          o dinheiro que existe hoje.
+        </span>
+
+        <div style="display:flex;flex-direction:column;">
+          <sc-for list="{{ contas }}" as="c" hint-placeholder-count="2">
+            <div style="{{ c.rowStyle }}">
+              <span style="{{ c.pontoStyle }}"></span>
+              <div style="flex:1;min-width:160px;display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:15px;font-weight:600;color:var(--text-primary);">{{ c.nome }}</span>
+                <span style="font-size:12px;color:var(--text-secondary);">{{ c.detalhe }}</span>
+              </div>
+              <span style="{{ c.saldoStyle }}">{{ c.saldoFormatado }}</span>
+              <sc-if value="{{ !c.confirmandoExclusao }}" hint-placeholder-val="{{ true }}">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="trash-2" label="Remover conta" size="32" tone="danger" on-click="{{ c.onPedirExclusao }}" hint-size="32px,32px"></x-import>
+              </sc-if>
+              <sc-if value="{{ c.confirmandoExclusao }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size:12px;color:var(--text-secondary);max-width:220px;">Remover a conta? Os lançamentos ficam; eles só deixam de ter conta.</span>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="danger" size="sm" on-click="{{ c.onExcluir }}" hint-size="auto,32px">Remover</x-import>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ c.onCancelarExclusao }}" hint-size="auto,32px">Cancelar</x-import>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ !novaContaAberta }}" hint-placeholder-val="{{ true }}">
+          <button type="button" onClick="{{ onAbrirNovaConta }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:var(--radius-pill);background:transparent;border:1px dashed var(--border-strong);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;">+ Nova conta</button>
+        </sc-if>
+
+        <sc-if value="{{ novaContaAberta }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:14px;padding-top:14px;border-top:1px solid var(--border-default);">
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.TextInput" label="Nome" value="{{ novaConta.nome }}" on-change="{{ onNovaContaNome }}" placeholder="Ex.: Nubank" hint-size="100%,68px"></x-import>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Tipo</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <sc-for list="{{ tiposConta }}" as="t" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ t.onSelect }}" style="{{ t.style }}">{{ t.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.MoneyInput" label="Saldo de hoje" value="{{ novaConta.saldo }}" on-change="{{ onNovaContaSaldo }}" hint-size="100%,68px"></x-import>
+            <span style="font-size:12px;color:var(--text-secondary);">
+              O saldo que está no extrato hoje. O histórico anterior fica como
+              está: a conta começa a contar movimento a partir de hoje, senão o
+              que já foi lançado seria descontado duas vezes.
+            </span>
+            <div style="display:flex;gap:8px;">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="md" full-width="{{ true }}" disabled="{{ !novaConta.nome }}" on-click="{{ onCriarConta }}" hint-size="auto,44px">Cadastrar conta</x-import>
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="md" full-width="{{ true }}" on-click="{{ onFecharNovaConta }}" hint-size="auto,44px">Cancelar</x-import>
+            </div>
+          </div>
+        </sc-if>
+      </x-import>
+
       <!-- Só quem administra vê este cartão. Esconder não é segurança: a
            segurança está nas RPCs, que recusam quem não é admin. Isto aqui
            é só não oferecer o que não serve. -->
@@ -236,6 +293,10 @@
 <script type="text/x-dc" data-dc-script>
 const AVATAR_SWATCHES = ['#0E6E5B', '#C8963E', '#4472A8', '#8B5FA0', '#6B7A8F', '#C1502E'];
 
+function formatBRL(n) {
+  return Math.abs(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 /* Data curta vem do CasaUI para o formato ser o mesmo em toda a aplicação. */
 function dataCurta(iso) {
   return (window.CasaUI && window.CasaUI.dataCurta) ? window.CasaUI.dataCurta(iso) : (iso || '');
@@ -253,6 +314,10 @@ class Component extends DCLogic {
     casaNome: '',
     podeAdmin: false,
     acessos: [],
+    contas: [],
+    novaContaAberta: false,
+    novaConta: { nome: '', tipo: 'corrente', saldo: 0 },
+    confirmExcluirContaId: null,
     novoAcessoAberto: false,
     novoAcesso: { nome: '', pin: '', podePF: true, podePJ: false },
     pinCriado: '',
@@ -265,7 +330,7 @@ class Component extends DCLogic {
     window.addEventListener('resize', this.onResize);
     this.carregar();
     // Outra pessoa da família mexeu? A lista se atualiza sozinha.
-    this.pararEscuta = Casa.aoMudar(['membros'], () => this.carregar());
+    this.pararEscuta = Casa.aoMudar(['membros', 'contas'], () => this.carregar());
   }
   componentWillUnmount() {
     window.removeEventListener('resize', this.onResize);
@@ -281,13 +346,46 @@ class Component extends DCLogic {
       /* A lista de acessos só é pedida a quem administra: a RPC recusaria
          os outros, e um erro vermelho para quem não tem nada a fazer ali
          seria barulho. A tranca continua sendo a RPC, não este `if`. */
-      const [membros, acessos] = await Promise.all([
+      const [membros, acessos, contas] = await Promise.all([
         Casa.membros.listar(),
         podeAdmin ? Casa.acessos.listar() : Promise.resolve([]),
+        Casa.contas.comSaldo(),
       ]);
-      this.setState({ casaNome: casa.nome, podeAdmin, membros, acessos, erro: '' });
+      this.setState({ casaNome: casa.nome, podeAdmin, membros, acessos, contas, erro: '' });
     } catch (e) {
       this.setState({ erro: e.message });
+    }
+  }
+
+  /* ---------------------------------------------------------- contas
+     A conta é o lugar onde o dinheiro está. Sem nenhuma cadastrada o
+     Resumo só sabe somar o que passou pelo app; com elas, ele passa a
+     mostrar o saldo que existe. */
+
+  async criarConta() {
+    const c = this.state.novaConta;
+    if (!c.nome) return;
+    try {
+      /* `inicio` é hoje por padrão no banco, e é isso que queremos: a
+         conta conta movimento a partir de hoje. Sem isso, o histórico já
+         lançado seria descontado de novo do saldo informado. */
+      await Casa.contas.criar({
+        nome: c.nome, tipo: c.tipo, saldo_inicial: Number(c.saldo) || 0,
+      });
+      this.setState({ novaContaAberta: false, novaConta: { nome: '', tipo: 'corrente', saldo: 0 }, erro: '' });
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  async excluirConta(c) {
+    try {
+      await Casa.contas.excluir(c.id);
+      this.setState({ confirmExcluirContaId: null });
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message, confirmExcluirContaId: null });
     }
   }
 
@@ -425,6 +523,47 @@ class Component extends DCLogic {
       };
     }
 
+    const TIPOS_CONTA = [
+      { id: 'corrente', label: 'Conta corrente' },
+      { id: 'poupanca', label: 'Poupança' },
+      { id: 'carteira', label: 'Dinheiro vivo' },
+    ];
+    const tiposConta = TIPOS_CONTA.map(t => ({
+      label: t.label,
+      style: pilula(s.novaConta.tipo === t.id, false),
+      onSelect: () => this.setState({ novaConta: { ...s.novaConta, tipo: t.id } }),
+    }));
+
+    const CORES_CONTA = ['#0E6E5B', '#4472A8', '#C8963E', '#8B5FA0', '#6B7A8F', '#C1502E'];
+    const contas = s.contas.map((c, i, arr) => {
+      const saldo = Number(c.saldo_atual || 0);
+      const tipo = (TIPOS_CONTA.find(t => t.id === c.tipo) || {}).label || c.tipo;
+      return {
+        nome: c.nome,
+        detalhe: tipo + (c.ultimo_movimento
+          ? ' · último movimento em ' + dataCurta(c.ultimo_movimento)
+          : ' · sem movimento ainda'),
+        saldoFormatado: (saldo < 0 ? '- R$ ' : 'R$ ') + formatBRL(saldo),
+        saldoStyle: {
+          fontFamily: 'var(--font-numeric)', fontFeatureSettings: 'var(--num-features)',
+          fontSize: 15, fontWeight: 700, whiteSpace: 'nowrap',
+          color: saldo < 0 ? 'var(--color-alert)' : 'var(--text-primary)',
+        },
+        pontoStyle: {
+          width: 10, height: 10, flexShrink: 0, borderRadius: '50%',
+          background: c.cor || CORES_CONTA[i % CORES_CONTA.length],
+        },
+        confirmandoExclusao: s.confirmExcluirContaId === c.id,
+        onPedirExclusao: () => this.setState({ confirmExcluirContaId: c.id, erro: '' }),
+        onCancelarExclusao: () => this.setState({ confirmExcluirContaId: null }),
+        onExcluir: () => this.excluirConta(c),
+        rowStyle: {
+          display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0', flexWrap: 'wrap',
+          borderBottom: i < arr.length - 1 ? '1px solid var(--border-default)' : 'none',
+        },
+      };
+    });
+
     const acessos = s.acessos.map((a, i, arr) => {
       /* Sem administrador ninguém mais cria nem bloqueia nada: o último
          não pode se rebaixar. O banco também recusa — aqui o botão só
@@ -496,6 +635,21 @@ class Component extends DCLogic {
       onNewNomeChange: (v) => this.setState({ newForm: { ...s.newForm, nome: v } }),
       avatarSwatches,
       onAddMembro: () => this.addMembro(),
+
+      contas,
+      contasSubtitulo: s.contas.length === 0
+        ? 'Onde o dinheiro da casa fica'
+        : (s.contas.length === 1 ? '1 conta cadastrada' : s.contas.length + ' contas cadastradas'),
+      tiposConta,
+      novaContaAberta: s.novaContaAberta,
+      novaConta: s.novaConta,
+      onAbrirNovaConta: () => this.setState({ novaContaAberta: true, erro: '' }),
+      onFecharNovaConta: () => this.setState({
+        novaContaAberta: false, novaConta: { nome: '', tipo: 'corrente', saldo: 0 },
+      }),
+      onNovaContaNome: (v) => this.setState({ novaConta: { ...s.novaConta, nome: v } }),
+      onNovaContaSaldo: (v) => this.setState({ novaConta: { ...s.novaConta, saldo: v } }),
+      onCriarConta: () => this.criarConta(),
 
       podeAdmin: s.podeAdmin,
       acessos,
