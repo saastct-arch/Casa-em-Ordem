@@ -99,10 +99,33 @@ Deno.serve(async (req) => {
     return json({ error: "Corpo inválido" }, 400);
   }
 
-  // Procura a casa cujo PIN bate. A comparação é em tempo constante para
-  // não vazar quantos dígitos acertaram.
-  const { data: casas } = await admin.from("casas").select("id, nome, pin, email, senha_hash");
-  const casa = (casas ?? []).find((c) => iguais(pin, String(c.pin)));
+  // Procura o acesso daquele PIN. O banco responde: o PIN virou hash bcrypt
+  // e a comparação acontece lá dentro, então nem o hash nem os PINs das
+  // outras casas passam por aqui.
+  //
+  // O caminho antigo (ler a tabela e comparar em memória, em tempo constante)
+  // continua como rede de segurança: se a RPC não existir — migração ainda
+  // não aplicada, rollback — o login não pode parar de funcionar.
+  type Acesso = {
+    id: string; nome: string; email: string; senha_hash: string | null;
+    bloqueado?: boolean; pode_pf?: boolean; pode_pj?: boolean; pode_admin?: boolean;
+  };
+  let casa: Acesso | undefined;
+
+  const { data: achados, error: erroRpc } = await admin.rpc("acesso_por_pin", { p_pin: pin });
+  if (erroRpc) {
+    const { data: casas } = await admin.from("casas").select("id, nome, pin, email, senha_hash");
+    casa = (casas ?? []).find((c) => iguais(pin, String(c.pin))) as Acesso | undefined;
+  } else {
+    casa = (achados ?? [])[0] as Acesso | undefined;
+  }
+
+  // Acesso bloqueado não abre sessão nova. A sessão que já estiver aberta
+  // também não serve de nada: `minha_casa()` devolve nulo para quem está
+  // bloqueado, e sem casa a RLS não entrega linha nenhuma.
+  if (casa?.bloqueado) {
+    return json({ error: "Este acesso está bloqueado. Procure quem administra." }, 403);
+  }
 
   if (!casa) {
     const falhas = (tentativa?.falhas ?? 0) + 1;
@@ -211,6 +234,12 @@ Deno.serve(async (req) => {
     bloqueado_ate: null,
     atualizado_em: new Date().toISOString(),
   });
+
+  // Carimba a entrada: é o "último acesso" da listagem administrativa.
+  // Falhar aqui não pode derrubar um login que já deu certo.
+  // (try/catch e não .catch: o builder do supabase-js é "thenable", não
+  // Promise, então nem sempre tem .catch.)
+  try { await admin.rpc("marcar_acesso", { p_casa: casa.id }); } catch { /* nada */ }
 
   return json({
     casa: casa.nome,

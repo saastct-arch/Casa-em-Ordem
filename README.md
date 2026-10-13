@@ -3,10 +3,12 @@
 Controle financeiro doméstico. Cada casa tem o seu PIN; quem está dentro
 vê e edita os mesmos dados, e uma casa nunca enxerga a outra.
 
-| PIN | Casa |
-|---|---|
-| `0557` | Família Guimarães Silva |
-| `1202` | Italo e Maria |
+| PIN | Acesso | PF | PJ | Administra acessos |
+|---|---|:-:|:-:|:-:|
+| `0000` | Rafa (demonstração, somente leitura) | ✓ | | |
+| `0557` | Família Guimarães Silva | ✓ | | |
+| `1202` | Italo e Maria (pede uma segunda senha) | ✓ | ✓ | ✓ |
+| `2222` | Família Virgílio Miranda | ✓ | ✓ | |
 
 Backend: Supabase (projeto `ithttzcieeatkxnppxcf`). Frontend: páginas
 estáticas servidas pela Vercel.
@@ -18,16 +20,32 @@ edge function [`pin-login`](supabase/functions/pin-login/index.ts) o confere
 **no servidor**. Se bater, ela descobre de qual casa é aquele PIN e devolve
 a sessão da conta daquela casa.
 
-### Duas casas, dados separados
+### Cada casa, dados separados
 
 Cada tabela tem `casa_id`, preenchido sozinho pela função `minha_casa()` —
 o cliente nunca manda esse campo nem consegue escolher a casa de outra
 gente. A RLS filtra tudo por ele.
 
-A tabela `casas` (com os PINs) fica sem policy nenhuma: só o service role,
-que é quem a edge function usa, a alcança. O PIN nunca sai do servidor. O
-cabeçalho lê o nome da casa pela view `minha_casa_info`, que expõe só id e
-nome.
+Os PINs são guardados como hash bcrypt, e a comparação acontece dentro do
+banco (`acesso_por_pin`, que só o service role pode chamar). O PIN nunca
+sai do servidor nem volta a ser legível depois de criado. O cabeçalho lê o
+nome da casa pela view `minha_casa_info`, que expõe id, nome e permissões —
+nunca o PIN nem a senha.
+
+### PF e PJ
+
+O mesmo razão atende os dois ambientes: cada lançamento tem uma coluna
+`ambiente` (`pf` ou `pj`), e a policy de `entradas`, `saidas`, `categorias`,
+`cartoes` e `dividas` exige `pode_pj()` para qualquer linha de PJ. Quem não
+tem a permissão não lê nem grava essas linhas — digitar a URL do PJ ou
+montar a requisição na mão não adianta, porque quem barra é o banco.
+
+As RPCs de parcelamento são `security definer` (a RLS não vale dentro
+delas), então conferem a permissão por conta própria.
+
+Bloquear um acesso (`casas.bloqueado`) faz `minha_casa()` devolver nulo: a
+sessão que já estiver aberta para de enxergar qualquer linha na mesma hora,
+e nenhum dado é apagado.
 
 Para acrescentar uma casa, basta inserir uma linha em `casas` — a conta é
 criada no primeiro login, sem publicar nada.

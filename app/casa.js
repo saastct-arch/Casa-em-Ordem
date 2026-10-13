@@ -100,13 +100,23 @@
   });
 
   /**
-   * A casa da sessão atual. O PIN do login é que decide qual é — a view
-   * devolve só id e nome, nunca o PIN.
+   * A casa da sessão atual e o que aquele acesso pode abrir. O PIN do login
+   * é que decide qual é — a view devolve id, nome e permissões, nunca o PIN
+   * nem a senha.
+   *
+   * As permissões servem para a tela não *oferecer* o que não abre (o
+   * seletor de PJ, o menu de administração). Quem autoriza de verdade é a
+   * RLS: esconder botão não é controle de acesso.
    */
   async function casaAtual() {
-    var r = await sb.from('minha_casa_info').select('id, nome').maybeSingle();
+    var r = await de('minha_casa_info')
+      .select('id, nome, somente_leitura, pode_pf, pode_pj, pode_admin')
+      .maybeSingle();
     if (r.error) throw new Error(r.error.message);
-    return r.data || { id: null, nome: '' };
+    return r.data || {
+      id: null, nome: '', somente_leitura: false,
+      pode_pf: true, pode_pj: false, pode_admin: false,
+    };
   }
 
   // ---------------------------------------------------------- período
@@ -133,12 +143,88 @@
     return { de: iso(new Date(year, month, 1)), ate: iso(new Date(year, month + 1, 0)) };
   }
 
+  // -------------------------------------------------------- ambiente
+  /* PF (pessoal e familiar) e PJ (empresarial) dividem o mesmo razão: cada
+   * linha diz de qual ambiente é. Quem separa de verdade é a RLS no banco —
+   * um acesso sem permissão de PJ não lê nem grava linha de PJ, venha a
+   * requisição de onde vier. O que este bloco faz é outra coisa: não pedir
+   * ao servidor o que a tela não vai mostrar, e carimbar o ambiente certo
+   * no que for criado. Para quem tem os dois ambientes, é isto que impede
+   * o dinheiro da empresa de aparecer misturado ao de casa.
+   *
+   * Mora no sessionStorage junto com a sessão: fechou a aba, os dois somem.
+   */
+  var TEM_AMBIENTE = {
+    categorias: 1, entradas: 1, saidas: 1, cartoes: 1, dividas: 1, faturas: 1,
+  };
+  var CHAVE_AMBIENTE = 'casa-em-ordem-ambiente';
+  var ambienteAtual = 'pf';
+  var ouvintesDeAmbiente = [];
+
+  try {
+    var guardado = window.sessionStorage.getItem(CHAVE_AMBIENTE);
+    if (guardado === 'pf' || guardado === 'pj') ambienteAtual = guardado;
+  } catch (e) { /* navegação privada: fica no padrão */ }
+
+  var ambiente = {
+    atual: function () { return ambienteAtual; },
+    ehPJ: function () { return ambienteAtual === 'pj'; },
+
+    /** Troca o ambiente e avisa quem estiver ouvindo. */
+    definir: function (novo) {
+      if (novo !== 'pf' && novo !== 'pj') {
+        throw new Error('Ambiente deve ser "pf" ou "pj".');
+      }
+      if (novo === ambienteAtual) return ambienteAtual;
+      ambienteAtual = novo;
+      try { window.sessionStorage.setItem(CHAVE_AMBIENTE, novo); } catch (e) {}
+      ouvintesDeAmbiente.slice().forEach(function (f) {
+        try { f(novo); } catch (e) {}
+      });
+      return novo;
+    },
+
+    /** Devolve a função que cancela a inscrição. */
+    aoTrocar: function (cb) {
+      ouvintesDeAmbiente.push(cb);
+      return function () {
+        ouvintesDeAmbiente = ouvintesDeAmbiente.filter(function (f) { return f !== cb; });
+      };
+    },
+  };
+
+  function carimbar(nome, dados) {
+    if (!TEM_AMBIENTE[nome]) return dados;
+    if (Array.isArray(dados)) {
+      return dados.map(function (d) { return carimbar(nome, d); });
+    }
+    return Object.assign({ ambiente: ambienteAtual }, dados);
+  }
+
+  /**
+   * `sb.from` com o ambiente já embutido. Todo acesso a tabela passa por
+   * aqui justamente para não existir consulta que esqueceu o filtro — o
+   * esquecimento vazaria o PJ dentro do PF de quem tem os dois.
+   */
+  function de(nome) {
+    var b = sb.from(nome);   // o cru, aqui dentro: `de` chamaria a si mesmo
+    if (!TEM_AMBIENTE[nome]) return b;
+    return {
+      select: function () {
+        return b.select.apply(b, arguments).eq('ambiente', ambienteAtual);
+      },
+      insert: function (dados) { return b.insert(carimbar(nome, dados)); },
+      update: function (dados) { return b.update(dados).eq('ambiente', ambienteAtual); },
+      delete: function () { return b.delete().eq('ambiente', ambienteAtual); },
+    };
+  }
+
   // ------------------------------------------------------------ CRUD
   function tabela(nome, ordem) {
     ordem = ordem || { coluna: 'created_at', crescente: false };
     return {
       async listar(filtros) {
-        var q = sb.from(nome).select('*');
+        var q = de(nome).select('*');
         if (filtros) {
           Object.keys(filtros).forEach(function (col) {
             if (filtros[col] !== undefined && filtros[col] !== null) {
@@ -149,13 +235,13 @@
         return ok(await q.order(ordem.coluna, { ascending: ordem.crescente }));
       },
       async criar(dados) {
-        return ok(await sb.from(nome).insert(dados).select().single());
+        return ok(await de(nome).insert(dados).select().single());
       },
       async atualizar(id, dados) {
-        return ok(await sb.from(nome).update(dados).eq('id', id).select().single());
+        return ok(await de(nome).update(dados).eq('id', id).select().single());
       },
       async excluir(id) {
-        return ok(await sb.from(nome).delete().eq('id', id).select());
+        return ok(await de(nome).delete().eq('id', id).select());
       },
     };
   }
@@ -164,7 +250,7 @@
   var cartoes = Object.assign(tabela('cartoes', { coluna: 'nome', crescente: true }), {
     /** Lançamentos no crédito deste cartão: eles impedem a exclusão. */
     async contarLancamentos(id) {
-      var r = await sb.from('saidas')
+      var r = await de('saidas')
         .select('id', { count: 'exact', head: true })
         .eq('cartao_id', id);
       if (r.error) throw new Error(r.error.message);
@@ -189,15 +275,15 @@
     },
 
     async listarPorTipo(tipo) {
-      return ok(await sb.from('categorias').select('*').eq('tipo', tipo).order('nome'));
+      return ok(await de('categorias').select('*').eq('tipo', tipo).order('nome'));
     },
 
     /** Reaproveita a categoria se o nome já existir naquele tipo. */
     async garantir(nome, tipo) {
-      var achada = ok(await sb.from('categorias').select('*')
+      var achada = ok(await de('categorias').select('*')
         .eq('nome', nome).eq('tipo', tipo).maybeSingle());
       if (achada) return achada;
-      return ok(await sb.from('categorias').insert({ nome: nome, tipo: tipo })
+      return ok(await de('categorias').insert({ nome: nome, tipo: tipo })
         .select().single());
     },
   });
@@ -210,13 +296,13 @@
    * em Saídas perderia o nome.
    */
   async function excluirComCategoria(tabela, coluna, id) {
-    var cat = ok(await sb.from('categorias').select('id').eq(coluna, id).maybeSingle());
-    var apagado = ok(await sb.from(tabela).delete().eq('id', id).select());
+    var cat = ok(await de('categorias').select('id').eq(coluna, id).maybeSingle());
+    var apagado = ok(await de(tabela).delete().eq('id', id).select());
     if (cat) {
-      var usos = await sb.from('saidas')
+      var usos = await de('saidas')
         .select('id', { count: 'exact', head: true })
         .eq('categoria_id', cat.id);
-      if (!usos.count) await sb.from('categorias').delete().eq('id', cat.id);
+      if (!usos.count) await de('categorias').delete().eq('id', cat.id);
     }
     return apagado;
   }
@@ -227,10 +313,10 @@
 
     /** Pagamentos de uma dívida = saídas na categoria vinculada a ela. */
     async pagamentos(dividaId) {
-      var cat = ok(await sb.from('categorias').select('id')
+      var cat = ok(await de('categorias').select('id')
         .eq('divida_id', dividaId).maybeSingle());
       if (!cat) return [];
-      return ok(await sb.from('saidas').select('data, valor')
+      return ok(await de('saidas').select('data, valor')
         .eq('categoria_id', cat.id).order('data', { ascending: false }));
     },
   });
@@ -241,7 +327,7 @@
 
     /** Quantos saques já saíram deste cofrinho (eles impedem a exclusão). */
     async contarResgates(id) {
-      var r = await sb.from('entradas')
+      var r = await de('entradas')
         .select('id', { count: 'exact', head: true })
         .eq('cofrinho_id', id).eq('tipo', 'resgate');
       if (r.error) throw new Error(r.error.message);
@@ -265,7 +351,7 @@
 
     /** Ajuste manual de saldo (rendimento). Valor assinado. */
     async rendimento(cofrinhoId, valor, data) {
-      return ok(await sb.from('cofrinho_rendimentos')
+      return ok(await de('cofrinho_rendimentos')
         .insert({ cofrinho_id: cofrinhoId, valor: valor, data: data || undefined })
         .select().single());
     },
@@ -275,15 +361,15 @@
      * saques (entradas de resgate) e rendimentos, em uma linha do tempo.
      */
     async historico(cofrinhoId) {
-      var cat = ok(await sb.from('categorias').select('id')
+      var cat = ok(await de('categorias').select('id')
         .eq('cofrinho_id', cofrinhoId).maybeSingle());
 
       var aportes = cat
-        ? ok(await sb.from('saidas').select('data, valor').eq('categoria_id', cat.id))
+        ? ok(await de('saidas').select('data, valor').eq('categoria_id', cat.id))
         : [];
-      var saques = ok(await sb.from('entradas').select('data, valor')
+      var saques = ok(await de('entradas').select('data, valor')
         .eq('cofrinho_id', cofrinhoId).eq('tipo', 'resgate'));
-      var rends = ok(await sb.from('cofrinho_rendimentos').select('data, valor')
+      var rends = ok(await de('cofrinho_rendimentos').select('data, valor')
         .eq('cofrinho_id', cofrinhoId));
 
       var linhas = [];
@@ -308,14 +394,14 @@
   // que soma o extrato. Editar ou apagar um lançamento acerta o saldo sozinho.
   var carteiras = Object.assign(tabela('carteiras', { coluna: 'nome', crescente: true }), {
     async comSaldo() {
-      return ok(await sb.from('carteiras_saldo').select('*').order('nome'));
+      return ok(await de('carteiras_saldo').select('*').order('nome'));
     },
     // Créditos e débitos de uma carteira na mesma lista, do mais novo ao mais velho.
     async extrato(carteiraId) {
-      var creditos = ok(await sb.from('entradas')
+      var creditos = ok(await de('entradas')
         .select('id, descricao, valor, data, observacao, membros(nome)')
         .eq('carteira_id', carteiraId));
-      var debitos = ok(await sb.from('saidas')
+      var debitos = ok(await de('saidas')
         .select('id, descricao, valor, data, observacao, categorias(nome, slug), membros(nome)')
         .eq('carteira_id', carteiraId));
       var linhas = (creditos || []).map(function (e) {
@@ -340,7 +426,7 @@
   var entradas = Object.assign(tabela('entradas', { coluna: 'data', crescente: false }), {
     async doPeriodo(p) {
       var r = periodoRange(p);
-      return ok(await sb.from('entradas')
+      return ok(await de('entradas')
         .select('*, categorias(nome, slug), membros(nome), cofrinhos(nome), carteiras(nome)')
         .gte('data', r.de).lte('data', r.ate)
         .order('data', { ascending: false }));
@@ -355,7 +441,7 @@
      * `Casa.saidas.boletos` indefinido derrubava o carregamento das duas telas.
      */
     async boletos(de, ate) {
-      var q = sb.from('saidas')
+      var q = de('saidas')
         .select('*, categorias(nome, slug), membros(nome)')
         .eq('forma_pagamento', 'boleto');
       if (de) q = q.gte('vencimento', de);
@@ -365,7 +451,7 @@
 
     async doPeriodo(p) {
       var r = periodoRange(p);
-      return ok(await sb.from('saidas')
+      return ok(await de('saidas')
         .select('*, categorias(nome, slug, divida_id, cofrinho_id), membros(nome), cartoes(nome), carteiras(nome)')
         .gte('data', r.de).lte('data', r.ate)
         .order('data', { ascending: false }));
@@ -388,6 +474,9 @@
         p_categoria_id: o.categoriaId || null,
         p_membro_id: o.membroId || null,
         p_observacao: o.observacao || null,
+        // a RPC é SECURITY DEFINER, então a RLS não vale lá dentro: ela
+        // confere a permissão de PJ por conta própria com este ambiente
+        p_ambiente: ambienteAtual,
       }));
     },
 
@@ -413,7 +502,7 @@
       if (escopo !== 'atual' && escopo !== 'futuras') {
         throw new Error('Escopo deve ser "atual" ou "futuras"');
       }
-      var q = sb.from('saidas').delete().eq('parcela_grupo', grupo);
+      var q = de('saidas').delete().eq('parcela_grupo', grupo);
       q = escopo === 'atual'
         ? q.eq('parcela_num', parcelaNum)
         : q.gte('parcela_num', parcelaNum);
@@ -425,14 +514,14 @@
   var faturas = {
     /** Uma linha por cartão/ciclo, com à vista e parcelas separados. */
     async listar(cartaoId) {
-      var q = sb.from('faturas').select('*');
+      var q = de('faturas').select('*');
       if (cartaoId) q = q.eq('cartao_id', cartaoId);
       return ok(await q.order('fechamento', { ascending: false }));
     },
 
     /** Os lançamentos que compõem uma fatura. */
     async lancamentos(cartaoId, fechamento) {
-      return ok(await sb.from('saidas')
+      return ok(await de('saidas')
         .select('*, categorias(nome, slug), membros(nome)')
         .eq('cartao_id', cartaoId).eq('competencia', fechamento)
         .order('data'));
@@ -440,7 +529,7 @@
 
     /** Parcelas que ainda vão cair em faturas futuras deste cartão. */
     async comprometidoFuturo(cartaoId, depoisDe) {
-      return ok(await sb.from('saidas')
+      return ok(await de('saidas')
         .select('valor, competencia, parcela_num, parcela_total')
         .eq('cartao_id', cartaoId)
         .not('parcela_grupo', 'is', null)
@@ -482,6 +571,7 @@
     sb: sb,
     auth: auth,
     casaAtual: casaAtual,
+    ambiente: ambiente,
     periodoRange: periodoRange,
     membros: membros,
     categorias: categorias,
