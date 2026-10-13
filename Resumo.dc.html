@@ -103,7 +103,7 @@
             <x-import component-from-global-scope="CasaUI.Barras" itens="{{ porCategoria }}" rotulo-item="Categoria" preencher="{{ true }}" hint-size="100%,220px"></x-import>
           </sc-if>
           <sc-if value="{{ !temCategorias }}" hint-placeholder-val="{{ false }}">
-            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="chart-column" title="Nada gasto no período" description="Lance um gasto para ver em que ele foi." hint-size="100%,160px"></x-import>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="inbox" title="Nada gasto no período" description="Lance um gasto para ver em que ele foi." hint-size="100%,160px"></x-import>
           </sc-if>
         </x-import>
 
@@ -141,7 +141,7 @@
             </div>
           </sc-if>
           <sc-if value="{{ !temFaturas }}" hint-placeholder-val="{{ false }}">
-            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="credit-card" title="Nenhuma fatura a vencer" description="Compras no crédito aparecem aqui quando a fatura fecha." hint-size="100%,160px"></x-import>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="receipt-text" title="Nenhuma fatura a vencer" description="Compras no crédito aparecem aqui quando a fatura fecha." hint-size="100%,160px"></x-import>
           </sc-if>
         </x-import>
 

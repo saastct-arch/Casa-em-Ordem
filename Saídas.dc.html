@@ -244,6 +244,15 @@
               <option value="{{ f.id }}">{{ f.label }}</option>
             </sc-for>
           </select>
+          <select class="ceo-select" value="{{ filtroStatus }}" onChange="{{ onFiltroStatus }}" style="height:var(--control-h-sm);padding:0 12px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:13px;color:var(--text-primary);outline:none;">
+            <option value="todos">Situação: todas</option>
+            <option value="aberto">Em aberto</option>
+            <option value="vencida">Vencidas</option>
+            <option value="parcial">Pagas em parte</option>
+            <option value="pago">Pagas</option>
+            <option value="fatura">Na fatura do cartão</option>
+            <option value="revisar">A confirmar</option>
+          </select>
         </div>
       </div>
 
@@ -264,11 +273,19 @@
                   </sc-if>
                   <sc-if value="{{ !item.confirmingDelete }}" hint-placeholder-val="{{ true }}">
                     <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.CategoryChip" category="{{ item.category }}" label="{{ item.categoryLabel }}" size="sm" hint-size="auto,26px"></x-import>
-                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
                       <span style="font-size:15px;font-weight:600;color:var(--text-primary);">R$ {{ item.amountFormatted }}</span>
-                      <sc-if value="{{ item.isParcelado }}" hint-placeholder-val="{{ false }}">
-                        <span style="display:inline-flex;align-self:flex-start;align-items:center;height:20px;padding:0 8px;border-radius:var(--radius-pill);background:var(--cream-200);color:var(--text-secondary);font-size:11px;font-weight:600;">{{ item.parcelaTag }}</span>
-                      </sc-if>
+                      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                        <sc-if value="{{ item.mostraSelo }}" hint-placeholder-val="{{ true }}">
+                          <x-import component-from-global-scope="CasaUI.Selo" status="{{ item.statusKey }}" hint-size="auto,24px"></x-import>
+                        </sc-if>
+                        <sc-if value="{{ item.statusTexto }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size:12px;color:var(--text-secondary);">{{ item.statusTexto }}</span>
+                        </sc-if>
+                        <sc-if value="{{ item.isParcelado }}" hint-placeholder-val="{{ false }}">
+                          <span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:var(--radius-pill);background:var(--cream-200);color:var(--text-secondary);font-size:11px;font-weight:600;">{{ item.parcelaTag }}</span>
+                        </sc-if>
+                      </div>
                       <sc-if value="{{ item.observacao }}" hint-placeholder-val="{{ false }}">
                         <span style="font-size:12px;color:var(--text-secondary);font-style:italic;">{{ item.observacao }}</span>
                       </sc-if>
@@ -276,9 +293,50 @@
                     <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="{{ item.formaIcon }}" size="17" color="var(--text-muted)" hint-size="17px,17px"></x-import>
                     <span style="{{ item.avatarStyle }}">{{ item.membroInitial }}</span>
                     <div style="display:flex;gap:2px;">
+                      <sc-if value="{{ item.podePagar }}" hint-placeholder-val="{{ true }}">
+                        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="circle-check" label="Dar baixa" size="32" on-click="{{ item.onPagar }}" hint-size="32px,32px"></x-import>
+                      </sc-if>
+                      <!-- Estas duas vão com palavra, não com ícone: o
+                           conjunto do design system não tem glifo para
+                           "desfazer" nem para "confirmar", e um ícone
+                           emprestado vira adivinhação. -->
+                      <sc-if value="{{ item.podeDesfazer }}" hint-placeholder-val="{{ false }}">
+                        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ item.onDesfazer }}" hint-size="auto,32px">Desfazer baixa</x-import>
+                      </sc-if>
+                      <sc-if value="{{ item.precisaRevisar }}" hint-placeholder-val="{{ false }}">
+                        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="soft" size="sm" on-click="{{ item.onRevisar }}" hint-size="auto,32px">Foi paga?</x-import>
+                      </sc-if>
                       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="pencil" label="Editar" size="32" on-click="{{ item.onEdit }}" hint-size="32px,32px"></x-import>
                       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="trash-2" label="Excluir" size="32" tone="danger" on-click="{{ item.onDelete }}" hint-size="32px,32px"></x-import>
                     </div>
+
+                    <!-- Baixa: valor e data ficam à vista, porque pagar
+                         metade e pagar atrasado são o caso comum. -->
+                    <sc-if value="{{ item.pagando }}" hint-placeholder-val="{{ false }}">
+                      <div style="width:100%;display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;padding:12px 10px 4px;border-top:1px dashed var(--border-default);">
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);">Valor pago</label>
+                          <input type="text" inputmode="decimal" value="{{ baixaValor }}" onChange="{{ onBaixaValor }}" style="width:120px;height:var(--control-h-sm);padding:0 10px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-numeric);font-size:14px;color:var(--text-primary);outline:none;"></input>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);">Quando saiu</label>
+                          <input type="date" value="{{ baixaData }}" onChange="{{ onBaixaData }}" style="height:var(--control-h-sm);padding:0 10px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:14px;color:var(--text-primary);outline:none;"></input>
+                        </div>
+                        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="sm" on-click="{{ item.onPagarTudo }}" hint-size="auto,36px">Paguei tudo (R$ {{ item.faltaFormatted }})</x-import>
+                        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="soft" size="sm" on-click="{{ item.onPagarValor }}" hint-size="auto,36px">Paguei esse valor</x-import>
+                        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ item.onCancelarBaixa }}" hint-size="auto,36px">Cancelar</x-import>
+                      </div>
+                    </sc-if>
+
+                    <!-- Histórico migrado: o sistema não adivinhou, então pergunta. -->
+                    <sc-if value="{{ item.revisando }}" hint-placeholder-val="{{ false }}">
+                      <div style="width:100%;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 10px 4px;border-top:1px dashed var(--border-default);">
+                        <span style="font-size:13px;color:var(--text-secondary);margin-right:auto;">Esta conta antiga chegou a ser paga?</span>
+                        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="sm" on-click="{{ item.onRevisarPago }}" hint-size="auto,36px">Foi paga</x-import>
+                        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="soft" size="sm" on-click="{{ item.onRevisarAberto }}" hint-size="auto,36px">Continua em aberto</x-import>
+                        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ item.onCancelarRevisao }}" hint-size="auto,36px">Agora não</x-import>
+                      </div>
+                    </sc-if>
                   </sc-if>
                 </div>
               </sc-for>
@@ -303,6 +361,11 @@ const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Ag
 function dateLabel(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   return `${String(d).padStart(2, '0')} de ${MESES_LONGO[m - 1]}`;
+}
+/* "Venceu em 03 out" cabe na linha; a data inteira não. Vem do CasaUI
+   para o formato ser o mesmo em toda a aplicação. */
+function dataCurta(iso) {
+  return (window.CasaUI && window.CasaUI.dataCurta) ? window.CasaUI.dataCurta(iso) : (iso || '');
 }
 function hojeISO() {
   const d = new Date();
@@ -331,6 +394,12 @@ class Component extends DCLogic {
     formOpen: false,
     newCatOpen: false, newCatName: '',
     filtroCategoria: 'todas', filtroMembro: 'todos', filtroForma: 'todas',
+    filtroStatus: 'todos',
+    // Baixa: a linha que está sendo paga, e o quanto. Fora do form de
+    // cadastro de propósito — pagar não é editar.
+    baixaId: null, baixaValor: '', baixaData: '',
+    revisarId: null,
+    hoje: hojeISO(),
     editingId: null, editingParcela: null,
     confirmDeleteId: null,
     confirmingEditScope: false,
@@ -358,7 +427,7 @@ class Component extends DCLogic {
         const casa = await Casa.casaAtual();
         this.setState({ casaNome: casa.nome });
       }
-      const [entries, categorias, membros, cartoes, dividas, cofrinhos, carteiras] = await Promise.all([
+      const [entries, categorias, membros, cartoes, dividas, cofrinhos, carteiras, hoje] = await Promise.all([
         Casa.saidas.doPeriodo(this.state.period),
         Casa.categorias.listarPorTipo('saida'),
         Casa.membros.listar(),
@@ -366,10 +435,13 @@ class Component extends DCLogic {
         Casa.dividas.listar(),
         Casa.cofrinhos.listar(),
         Casa.carteiras.listar({ ativa: true }),
+        // O "hoje" que decide vencimento é o do servidor: o relógio do
+        // celular pode estar errado, e vencida é palavra séria.
+        Casa.hoje(),
       ]);
       const f = this.state.form;
       this.setState({
-        entries, categorias, membros, cartoes, dividas, cofrinhos, carteiras, erro: '',
+        entries, categorias, membros, cartoes, dividas, cofrinhos, carteiras, hoje, erro: '',
         form: {
           ...f,
           category: f.category || (categorias[0] ? categorias[0].id : ''),
@@ -565,6 +637,69 @@ class Component extends DCLogic {
     }
   }
 
+  /* ------------------------------------------------------ baixa
+     Obrigação e dinheiro saindo são duas coisas. Lançar o gasto cria a
+     obrigação; dar baixa é dizer que o dinheiro saiu, quando saiu e
+     quanto. Quem faz a conta do que falta é o banco — aqui só se diz o
+     que a pessoa escolheu. */
+
+  /** Quanto ainda falta pagar nesta linha. */
+  falta(entry) {
+    const pago = Number(entry.valor_pago || 0);
+    return Math.max(0, Number((Number(entry.valor) - pago).toFixed(2)));
+  }
+
+  /** Abre o painel de baixa já preenchido com o que falta e a data de hoje. */
+  abrirBaixa(entry) {
+    this.setState({
+      baixaId: entry.id,
+      baixaValor: this.falta(entry).toFixed(2),
+      baixaData: this.state.hoje || hojeISO(),
+      confirmDeleteId: null, revisarId: null,
+    });
+  }
+
+  fecharBaixa() { this.setState({ baixaId: null, baixaValor: '', baixaData: '' }); }
+
+  /** `tudo` manda null e deixa o servidor pagar o saldo inteiro. */
+  async confirmarBaixa(entry, tudo) {
+    const valor = tudo ? null : Number(String(this.state.baixaValor).replace(',', '.'));
+    if (!tudo && (!isFinite(valor) || valor <= 0)) {
+      return this.setState({ erro: 'Informe um valor maior que zero para a baixa.' });
+    }
+    try {
+      await Casa.saidas.pagar(entry.id, { valor, data: this.state.baixaData || null });
+      this.fecharBaixa();
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message });
+      this.fecharBaixa();
+    }
+  }
+
+  /** Desfaz a última baixa. Estorno não apaga: a linha fica marcada. */
+  async desfazerBaixa(entry) {
+    try {
+      const pagos = (await Casa.saidas.pagamentos(entry.id)).filter(p => !p.estornado);
+      if (!pagos.length) return this.setState({ erro: 'Esta conta não tem baixa para desfazer.' });
+      await Casa.saidas.estornarPagamento(pagos[0].id);
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  /** Histórico antigo que o sistema não quis adivinhar: quem sabe é a casa. */
+  async responderRevisao(entry, foiPago) {
+    try {
+      await Casa.saidas.confirmarRevisao(entry.id, foiPago);
+      this.setState({ revisarId: null });
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message, revisarId: null });
+    }
+  }
+
   async addNewCat() {
     const nome = this.state.newCatName;
     if (!nome) return;
@@ -651,10 +786,57 @@ class Component extends DCLogic {
         .filter(e => s.filtroCategoria === 'todas' || e.categoria_id === s.filtroCategoria)
         .filter(e => s.filtroMembro === 'todos' || e.membro_id === s.filtroMembro)
         .filter(e => s.filtroForma === 'todas' || e.forma_pagamento === s.filtroForma)
+        .filter(e => {
+          if (s.filtroStatus === 'todos') return true;
+          if (s.filtroStatus === 'vencida') return Casa.vencida(e, s.hoje);
+          if (s.filtroStatus === 'revisar') return !!e.revisar;
+          if (s.filtroStatus === 'aberto') return e.status === 'pendente' || e.status === 'parcial';
+          return e.status === s.filtroStatus;
+        })
         .map((e, idx, arr) => {
           const forma = FORMAS.find(fo => fo.id === e.forma_pagamento);
           const nomeMembro = (e.membros && e.membros.nome) || '';
+          /* Um selo só, e o pior caso ganha: vencida come pendente, e
+             "confirmar" (histórico migrado) vem antes de tudo — é a única
+             das situações em que o número na tela pode estar errado. */
+          const vencida = Casa.vencida(e, s.hoje);
+          const situacao = e.revisar ? 'revisar' : (vencida ? 'vencida' : (e.status || 'pendente'));
+          const falta = this.falta(e);
+          const emAberto = e.status === 'pendente' || e.status === 'parcial';
+          /* Gasto à vista nasce e morre no mesmo instante: carimbar "Pago"
+             num pix de ontem não informa nada e enche a lista de selo. O
+             selo aparece onde houve uma dúvida — prazo, cartão, parcial,
+             cancelado, histórico a confirmar. */
+          const temPrazo = !!e.vencimento;
+          const mostraSelo = e.revisar || temPrazo
+            || e.forma_pagamento === 'credito'
+            || e.status === 'parcial' || e.status === 'cancelado';
           return {
+            mostraSelo,
+            statusKey: situacao,
+            /* Pago em parte sem dizer quanto falta é meio recado. */
+            statusTexto: e.status === 'parcial'
+              ? 'Falta R$ ' + formatBRL(falta)
+              : (vencida && !e.revisar ? 'Venceu em ' + dataCurta(e.vencimento) : ''),
+            // crédito não se paga aqui: quem paga é a fatura do cartão
+            podePagar: emAberto && !e.revisar && e.forma_pagamento !== 'credito',
+            /* Só o que teve baixa de verdade se desfaz. O gasto à vista
+               recebe a baixa no mesmo insert (migração 0022): ali desfazer
+               não quer dizer nada — o que se faz é editar ou excluir. */
+            podeDesfazer: temPrazo && (e.status === 'pago' || e.status === 'parcial') && !e.revisar,
+            precisaRevisar: !!e.revisar,
+            faltaFormatted: formatBRL(falta),
+            pagando: s.baixaId === e.id,
+            revisando: s.revisarId === e.id,
+            onPagar: () => this.abrirBaixa(e),
+            onPagarTudo: () => this.confirmarBaixa(e, true),
+            onPagarValor: () => this.confirmarBaixa(e, false),
+            onCancelarBaixa: () => this.fecharBaixa(),
+            onDesfazer: () => this.desfazerBaixa(e),
+            onRevisar: () => this.setState({ revisarId: e.id, baixaId: null }),
+            onRevisarPago: () => this.responderRevisao(e, true),
+            onRevisarAberto: () => this.responderRevisao(e, false),
+            onCancelarRevisao: () => this.setState({ revisarId: null }),
             category: Casa.categorias.chipKey(e.categorias),
             categoryLabel: (e.categorias && e.categorias.nome) || 'Sem categoria',
             amountFormatted: formatBRL(Number(e.valor)),
@@ -672,6 +854,7 @@ class Component extends DCLogic {
             onCancelDelete: () => this.setState({ confirmDeleteId: null }),
             rowStyle: {
               display: 'flex', alignItems: 'center', gap: 12, padding: '14px 10px',
+              flexWrap: 'wrap',
               borderBottom: idx < arr.length - 1 ? '1px solid var(--border-default)' : 'none',
             },
           };
@@ -762,6 +945,12 @@ class Component extends DCLogic {
       onSaveAllFuture: () => this.gravar('futuras'),
       onCancelEditScope: () => this.setState({ confirmingEditScope: false }),
       filtroCategoria: s.filtroCategoria, filtroMembro: s.filtroMembro, filtroForma: s.filtroForma,
+      filtroStatus: s.filtroStatus,
+      onFiltroStatus: (e) => this.setState({ filtroStatus: e.target.value }),
+      baixaValor: s.baixaValor,
+      baixaData: s.baixaData,
+      onBaixaValor: (e) => this.setState({ baixaValor: e.target.value }),
+      onBaixaData: (e) => this.setState({ baixaData: e.target.value }),
       onFiltroCategoria: (e) => this.setState({ filtroCategoria: e.target.value }),
       onFiltroMembro: (e) => this.setState({ filtroMembro: e.target.value }),
       onFiltroForma: (e) => this.setState({ filtroForma: e.target.value }),

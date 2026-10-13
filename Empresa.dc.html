@@ -129,7 +129,7 @@
             <x-import component-from-global-scope="CasaUI.Colunas" pontos="{{ evolucao }}" series="{{ seriesEvolucao }}" descricao="Receitas e despesas realizadas, mês a mês" hint-size="100%,190px"></x-import>
           </sc-if>
           <sc-if value="{{ !temEvolucao }}" hint-placeholder-val="{{ false }}">
-            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="chart-column" title="Sem histórico ainda" description="Os meses aparecem aqui conforme a empresa for tendo movimento." hint-size="100%,160px"></x-import>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="trending-up" title="Sem histórico ainda" description="Os meses aparecem aqui conforme a empresa for tendo movimento." hint-size="100%,160px"></x-import>
           </sc-if>
         </x-import>
 
@@ -139,7 +139,7 @@
             <x-import component-from-global-scope="CasaUI.Barras" itens="{{ porCategoria }}" rotulo-item="Categoria" preencher="{{ true }}" hint-size="100%,220px"></x-import>
           </sc-if>
           <sc-if value="{{ !temCategorias }}" hint-placeholder-val="{{ false }}">
-            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="chart-column" title="Nada gasto no período" description="Lance uma despesa para ver em que ela foi." hint-size="100%,160px"></x-import>
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="inbox" title="Nada gasto no período" description="Lance uma despesa para ver em que ela foi." hint-size="100%,160px"></x-import>
           </sc-if>
         </x-import>
       </div>
