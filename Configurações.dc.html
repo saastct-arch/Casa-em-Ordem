@@ -139,6 +139,85 @@
         </sc-if>
       </x-import>
 
+      <!-- Só quem administra vê este cartão. Esconder não é segurança: a
+           segurança está nas RPCs, que recusam quem não é admin. Isto aqui
+           é só não oferecer o que não serve. -->
+      <sc-if value="{{ podeAdmin }}" hint-placeholder-val="{{ true }}">
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Acessos" subtitle="{{ acessosSubtitulo }}" hint-size="100%,420px" style="gap:16px;">
+          <div style="display:flex;flex-direction:column;">
+            <sc-for list="{{ acessos }}" as="a" hint-placeholder-count="3">
+              <div style="{{ a.rowStyle }}">
+                <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:4px;">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span style="font-size:15px;font-weight:600;color:var(--text-primary);">{{ a.nome }}</span>
+                    <sc-if value="{{ a.souEu }}" hint-placeholder-val="{{ false }}">
+                      <span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:var(--radius-pill);background:var(--color-primary-soft);color:var(--emerald-800);font-size:11px;font-weight:600;">este é você</span>
+                    </sc-if>
+                    <sc-if value="{{ a.bloqueado }}" hint-placeholder-val="{{ false }}">
+                      <x-import component-from-global-scope="CasaUI.Selo" status="pendente" texto="Bloqueado" hint-size="auto,24px"></x-import>
+                    </sc-if>
+                  </div>
+                  <span style="font-size:12px;color:var(--text-secondary);">{{ a.resumo }}</span>
+                </div>
+
+                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                  <sc-for list="{{ a.chaves }}" as="k" hint-placeholder-count="3">
+                    <button type="button" onClick="{{ k.onToggle }}" title="{{ k.titulo }}" disabled="{{ k.travado }}" style="{{ k.style }}">{{ k.label }}</button>
+                  </sc-for>
+                </div>
+
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <sc-if value="{{ !a.confirmandoExclusao }}" hint-placeholder-val="{{ true }}">
+                    <sc-if value="{{ !a.souEu }}" hint-placeholder-val="{{ true }}">
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ a.onBloquear }}" hint-size="auto,32px">{{ a.rotuloBloqueio }}</x-import>
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="trash-2" label="Excluir acesso" size="32" tone="danger" on-click="{{ a.onPedirExclusao }}" hint-size="32px,32px"></x-import>
+                    </sc-if>
+                  </sc-if>
+                  <sc-if value="{{ a.confirmandoExclusao }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size:12px;color:var(--text-secondary);max-width:200px;">{{ a.avisoExclusao }}</span>
+                    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="danger" size="sm" on-click="{{ a.onExcluir }}" hint-size="auto,32px">Excluir</x-import>
+                    <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ a.onCancelarExclusao }}" hint-size="auto,32px">Cancelar</x-import>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ !novoAcessoAberto }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ onAbrirNovoAcesso }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:var(--radius-pill);background:transparent;border:1px dashed var(--border-strong);color:var(--text-secondary);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;">+ Novo acesso</button>
+          </sc-if>
+
+          <sc-if value="{{ novoAcessoAberto }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:14px;padding-top:14px;border-top:1px solid var(--border-default);">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.TextInput" label="Nome" value="{{ novoAcesso.nome }}" on-change="{{ onNovoNome }}" placeholder="Ex.: Família Ribeiro" hint-size="100%,68px"></x-import>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <label style="font-size:13px;font-weight:600;color:var(--text-primary);">PIN de 4 dígitos</label>
+                <input type="text" inputmode="numeric" value="{{ novoAcesso.pin }}" onChange="{{ onNovoPin }}" placeholder="9999" style="width:120px;height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-numeric);font-size:18px;letter-spacing:0.2em;color:var(--text-primary);outline:none;"></input>
+                <span style="font-size:12px;color:var(--text-secondary);">Anote agora: o PIN vira um hash no banco e não dá para consultá-lo depois.</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Ambientes</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button type="button" onClick="{{ onNovoPF }}" style="{{ novoPFStyle }}">Pessoal</button>
+                  <button type="button" onClick="{{ onNovoPJ }}" style="{{ novoPJStyle }}">Empresa</button>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="md" full-width="{{ true }}" disabled="{{ !podeCriarAcesso }}" on-click="{{ onCriarAcesso }}" hint-size="auto,44px">Criar acesso</x-import>
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="md" full-width="{{ true }}" on-click="{{ onFecharNovoAcesso }}" hint-size="auto,44px">Cancelar</x-import>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ pinCriado }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-control);background:var(--color-accent-soft);color:var(--gold-700);font-size:13px;font-weight:600;">
+              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="triangle-alert" size="18" hint-size="18px,18px"></x-import>
+              {{ pinCriado }}
+            </div>
+          </sc-if>
+        </x-import>
+      </sc-if>
+
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Categorias" subtitle="Em breve" hint-size="100%,100px" style="opacity:0.55;">
         <span style="font-size:13px;color:var(--text-secondary);">Gestão de categorias personalizadas chega em uma próxima atualização.</span>
       </x-import>
@@ -157,6 +236,11 @@
 <script type="text/x-dc" data-dc-script>
 const AVATAR_SWATCHES = ['#0E6E5B', '#C8963E', '#4472A8', '#8B5FA0', '#6B7A8F', '#C1502E'];
 
+/* Data curta vem do CasaUI para o formato ser o mesmo em toda a aplicação. */
+function dataCurta(iso) {
+  return (window.CasaUI && window.CasaUI.dataCurta) ? window.CasaUI.dataCurta(iso) : (iso || '');
+}
+
 class Component extends DCLogic {
   state = {
     isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
@@ -167,6 +251,12 @@ class Component extends DCLogic {
     addOpen: false,
     newForm: { nome: '', cor: AVATAR_SWATCHES[0] },
     casaNome: '',
+    podeAdmin: false,
+    acessos: [],
+    novoAcessoAberto: false,
+    novoAcesso: { nome: '', pin: '', podePF: true, podePJ: false },
+    pinCriado: '',
+    confirmExcluirId: null,
     erro: '',
   };
 
@@ -186,11 +276,80 @@ class Component extends DCLogic {
     if (!(await Casa.auth.exigirSessao())) return;
     try {
       // Qual casa está logada: o PIN do login decide, e o cabeçalho mostra.
-      if (!this.state.casaNome) {
-        const casa = await Casa.casaAtual();
-        this.setState({ casaNome: casa.nome });
-      }
-      this.setState({ membros: await Casa.membros.listar(), erro: '' });
+      const casa = await Casa.casaAtual();
+      const podeAdmin = !!casa.pode_admin;
+      /* A lista de acessos só é pedida a quem administra: a RPC recusaria
+         os outros, e um erro vermelho para quem não tem nada a fazer ali
+         seria barulho. A tranca continua sendo a RPC, não este `if`. */
+      const [membros, acessos] = await Promise.all([
+        Casa.membros.listar(),
+        podeAdmin ? Casa.acessos.listar() : Promise.resolve([]),
+      ]);
+      this.setState({ casaNome: casa.nome, podeAdmin, membros, acessos, erro: '' });
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  /* -------------------------------------------------------- acessos
+     Cada PIN é uma casa com os seus próprios dados. Quem administra cria,
+     bloqueia e escolhe quais ambientes cada um enxerga; o banco é que
+     recusa — aqui só se pede. */
+
+  async mudarPermissao(a, chave) {
+    const proximo = {
+      podePF: chave === 'pf' ? !a.pode_pf : a.pode_pf,
+      podePJ: chave === 'pj' ? !a.pode_pj : a.pode_pj,
+      podeAdmin: chave === 'admin' ? !a.pode_admin : a.pode_admin,
+    };
+    // Acesso que não enxerga nada não é acesso: é um bloqueio disfarçado,
+    // e bloquear tem botão próprio.
+    if (!proximo.podePF && !proximo.podePJ) {
+      return this.setState({ erro: 'Um acesso precisa de pelo menos um ambiente. Para tirar o acesso, use Bloquear.' });
+    }
+    try {
+      await Casa.acessos.definirPermissoes(a.id, proximo);
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  async alternarBloqueio(a) {
+    try {
+      await Casa.acessos.definirBloqueio(a.id, !a.bloqueado);
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  async excluirAcesso(a) {
+    try {
+      await Casa.acessos.excluir(a.id);
+      this.setState({ confirmExcluirId: null });
+      await this.carregar();
+    } catch (e) {
+      // A RPC recusa acesso com histórico e diz quantos lançamentos são.
+      this.setState({ erro: e.message, confirmExcluirId: null });
+    }
+  }
+
+  async criarAcesso() {
+    const n = this.state.novoAcesso;
+    if (!n.nome || !/^\d{4}$/.test(n.pin)) return;
+    try {
+      await Casa.acessos.criar({ nome: n.nome, pin: n.pin, podePF: n.podePF, podePJ: n.podePJ });
+      this.setState({
+        novoAcessoAberto: false,
+        /* O PIN não volta do banco e não fica guardado em lugar nenhum
+           legível. Esta é a única vez que ele aparece. */
+        pinCriado: 'Acesso "' + n.nome + '" criado com o PIN ' + n.pin
+          + '. Anote: ele não aparece de novo.',
+        novoAcesso: { nome: '', pin: '', podePF: true, podePJ: false },
+        erro: '',
+      });
+      await this.carregar();
     } catch (e) {
       this.setState({ erro: e.message });
     }
@@ -252,6 +411,65 @@ class Component extends DCLogic {
       };
     });
 
+    /* Um botãozinho por ambiente, ligado ou desligado. Mais direto que
+       três caixas de seleção, e cabe na linha. */
+    function pilula(ligado, travado) {
+      return {
+        display: 'inline-flex', alignItems: 'center', height: 28, padding: '0 12px',
+        borderRadius: 'var(--radius-pill)', cursor: travado ? 'default' : 'pointer',
+        fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
+        border: ligado ? 'none' : '1px solid var(--border-default)',
+        background: ligado ? 'var(--color-primary-soft)' : 'transparent',
+        color: ligado ? 'var(--emerald-800)' : 'var(--text-muted)',
+        opacity: travado ? 0.5 : 1,
+      };
+    }
+
+    const acessos = s.acessos.map((a, i, arr) => {
+      /* Sem administrador ninguém mais cria nem bloqueia nada: o último
+         não pode se rebaixar. O banco também recusa — aqui o botão só
+         não finge que daria certo. */
+      const admins = arr.filter(x => x.pode_admin && !x.bloqueado).length;
+      const ultimoAdmin = a.pode_admin && !a.bloqueado && admins <= 1;
+      const chaves = [
+        { chave: 'pf', label: 'Pessoal', ligado: a.pode_pf, travado: false,
+          titulo: a.pode_pf ? 'Enxerga o ambiente pessoal' : 'Não enxerga o ambiente pessoal' },
+        { chave: 'pj', label: 'Empresa', ligado: a.pode_pj, travado: false,
+          titulo: a.pode_pj ? 'Enxerga o ambiente da empresa' : 'Não enxerga o ambiente da empresa' },
+        { chave: 'admin', label: 'Administra', ligado: a.pode_admin, travado: ultimoAdmin,
+          titulo: ultimoAdmin ? 'É o último administrador ativo: não dá para tirar' : 'Pode criar e bloquear acessos' },
+      ].map(k => ({
+        label: k.label, titulo: k.titulo, travado: k.travado,
+        style: pilula(k.ligado, k.travado),
+        onToggle: () => { if (!k.travado) this.mudarPermissao(a, k.chave); },
+      }));
+
+      const lanc = Number(a.lancamentos || 0);
+      return {
+        nome: a.nome,
+        souEu: !!a.sou_eu,
+        bloqueado: !!a.bloqueado,
+        chaves,
+        resumo: (lanc === 0 ? 'Sem lançamentos' : lanc === 1 ? '1 lançamento' : lanc + ' lançamentos')
+          + (a.ultimo_acesso ? ' · último acesso em ' + dataCurta(a.ultimo_acesso) : ' · nunca entrou'),
+        rotuloBloqueio: a.bloqueado ? 'Desbloquear' : 'Bloquear',
+        confirmandoExclusao: s.confirmExcluirId === a.id,
+        avisoExclusao: lanc > 0
+          ? 'Tem ' + lanc + ' lançamento(s): o banco vai recusar. O caminho é bloquear.'
+          : 'Excluir este acesso? Não dá para desfazer.',
+        onBloquear: () => this.alternarBloqueio(a),
+        onPedirExclusao: () => this.setState({ confirmExcluirId: a.id, erro: '' }),
+        onCancelarExclusao: () => this.setState({ confirmExcluirId: null }),
+        onExcluir: () => this.excluirAcesso(a),
+        rowStyle: {
+          display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0', flexWrap: 'wrap',
+          borderBottom: i < arr.length - 1 ? '1px solid var(--border-default)' : 'none',
+        },
+      };
+    });
+
+    const n = s.novoAcesso;
+
     const avatarSwatches = AVATAR_SWATCHES.map(sw => ({
       onSelect: () => this.setState({ newForm: { ...s.newForm, cor: sw } }),
       style: { width: 30, height: 30, borderRadius: '50%', background: sw, border: s.newForm.cor === sw ? '3px solid var(--text-primary)' : '1px solid var(--border-default)', cursor: 'pointer' },
@@ -278,6 +496,30 @@ class Component extends DCLogic {
       onNewNomeChange: (v) => this.setState({ newForm: { ...s.newForm, nome: v } }),
       avatarSwatches,
       onAddMembro: () => this.addMembro(),
+
+      podeAdmin: s.podeAdmin,
+      acessos,
+      acessosSubtitulo: s.acessos.length === 1
+        ? '1 acesso cadastrado'
+        : s.acessos.length + ' acessos cadastrados',
+      novoAcessoAberto: s.novoAcessoAberto,
+      novoAcesso: n,
+      novoPFStyle: pilula(n.podePF, false),
+      novoPJStyle: pilula(n.podePJ, false),
+      podeCriarAcesso: !!n.nome && /^\d{4}$/.test(n.pin) && (n.podePF || n.podePJ),
+      pinCriado: s.pinCriado,
+      onAbrirNovoAcesso: () => this.setState({ novoAcessoAberto: true, pinCriado: '', erro: '' }),
+      onFecharNovoAcesso: () => this.setState({
+        novoAcessoAberto: false, novoAcesso: { nome: '', pin: '', podePF: true, podePJ: false },
+      }),
+      onNovoNome: (v) => this.setState({ novoAcesso: { ...n, nome: v } }),
+      // só dígitos: um PIN com letra entraria e nunca mais abriria a porta
+      onNovoPin: (ev) => this.setState({
+        novoAcesso: { ...n, pin: String(ev.target.value || '').replace(/\D/g, '').slice(0, 4) },
+      }),
+      onNovoPF: () => this.setState({ novoAcesso: { ...n, podePF: !n.podePF } }),
+      onNovoPJ: () => this.setState({ novoAcesso: { ...n, podePJ: !n.podePJ } }),
+      onCriarAcesso: () => this.criarAcesso(),
     };
   }
 }
