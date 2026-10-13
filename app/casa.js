@@ -156,6 +156,7 @@
    */
   var TEM_AMBIENTE = {
     categorias: 1, entradas: 1, saidas: 1, cartoes: 1, dividas: 1, faturas: 1,
+    contas: 1, contas_saldo: 1, transferencias: 1, movimentos_caixa: 1,
   };
   var CHAVE_AMBIENTE = 'casa-em-ordem-ambiente';
   var ambienteAtual = 'pf';
@@ -676,6 +677,69 @@
     },
   };
 
+  // ------------------------------------------------------- caixa
+  /* Dois números que respondem perguntas diferentes, e misturá-los é o
+   * erro que faz o app prometer dinheiro que não existe:
+   *
+   *   saldo em caixa  — o que existe hoje. Dinheiro que de fato entrou
+   *                     menos o que de fato saiu, sobre o saldo inicial
+   *                     das contas. Não mexe com previsão.
+   *   saldo projetado — o caixa mais o que falta receber, menos o que
+   *                     falta pagar (contas e faturas em aberto).
+   *
+   * Transferência entre contas move dinheiro de lugar: muda o saldo de
+   * cada conta e não entra como receita nem despesa.
+   */
+  var contas = Object.assign(tabela('contas', { coluna: 'nome', crescente: true }), {
+    /** Com o saldo de hoje já calculado. */
+    async comSaldo() {
+      return ok(await de('contas_saldo').select('*').order('nome'));
+    },
+
+    /** O extrato: tudo o que mexeu em dinheiro, da conta ou de todas. */
+    async extrato(o) {
+      o = o || {};
+      var q = de('movimentos_caixa').select('*');
+      if (o.contaId) q = q.eq('conta_id', o.contaId);
+      if (o.de) q = q.gte('data', o.de);
+      if (o.ate) q = q.lte('data', o.ate);
+      return ok(await q.order('data', { ascending: false }));
+    },
+
+    async transferir(o) {
+      return ok(await sb.rpc('transferir', {
+        p_origem: o.origem,
+        p_destino: o.destino,
+        p_valor: o.valor,
+        p_data: o.data || null,
+        p_observacao: o.observacao || null,
+      }));
+    },
+
+    async transferencias(o) {
+      o = o || {};
+      var q = de('transferencias').select('*');
+      if (o.de) q = q.gte('data', o.de);
+      if (o.ate) q = q.lte('data', o.ate);
+      return ok(await q.order('data', { ascending: false }));
+    },
+  });
+
+  /**
+   * Os números do painel, calculados no banco para a tela não inventar a
+   * própria conta e divergir do relatório.
+   */
+  async function caixaResumo() {
+    var r = await sb.rpc('caixa_resumo', { p_ambiente: ambienteAtual });
+    if (r.error) throw new Error(r.error.message);
+    var linha = Array.isArray(r.data) ? r.data[0] : r.data;
+    return linha || {
+      qtd_contas: 0, saldo_contas: 0, movimentado: 0, sem_conta: 0, saldo_caixa: 0,
+      a_receber: 0, a_pagar: 0, vencido: 0, faturas_abertas: 0, a_revisar: 0,
+      saldo_projetado: 0,
+    };
+  }
+
   // ------------------------------------------------- administração
   /* Governo dos acessos, só para quem tem `pode_admin`. Tudo passa por RPC:
    * a tabela `casas` não é escrita por ninguém logado, nem pelo
@@ -774,6 +838,8 @@
     entradas: entradas,
     saidas: saidas,
     faturas: faturas,
+    contas: contas,
+    caixaResumo: caixaResumo,
     acessos: acessos,
     aoMudar: aoMudar,
   };

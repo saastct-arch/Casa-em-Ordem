@@ -71,6 +71,39 @@ já significava que o dinheiro saiu). Boletos vencidos sem evidência de
 pagamento ficaram com `revisar = true`: aparecem para a família confirmar e
 ficam de fora dos alertas, para o app não alarmar sobre palpite dele mesmo.
 
+### Saldo em caixa e saldo projetado
+
+Dois números que respondem perguntas diferentes, e misturá-los é o que faz
+um app prometer dinheiro que não existe:
+
+- **saldo em caixa** — o que existe hoje. Saldo inicial das contas mais o
+  que de fato entrou, menos o que de fato saiu. Não mexe com previsão.
+- **saldo projetado** — o caixa mais o que falta receber, menos o que falta
+  pagar (contas em aberto e faturas em aberto).
+
+`caixa_resumo(ambiente)` calcula os dois no banco, para a tela não fazer a
+própria conta e divergir do relatório. Não há risco de contar duas vezes
+entre "a pagar" e "faturas abertas": compra no crédito tem status `fatura`,
+que não entra em a pagar.
+
+**Contas são opcionais.** Sem nenhuma cadastrada, o caixa é "o que entrou
+menos o que saiu desde que a casa usa o app". Com contas, vale o saldo
+delas. O saldo inicial tem uma data (`inicio`, por padrão o dia do
+cadastro): quem informa o saldo de hoje não vê o histórico anterior
+descontado de novo, porque ele já está dentro desse saldo.
+
+**Movimento sem conta informada ainda conta no caixa** — o dinheiro saiu de
+verdade; o que falta é só saber de onde. Sem esse cuidado, uma baixa sem
+conta sumiria do saldo.
+
+**Transferência entre contas não é receita nem despesa.** Entra como duas
+pernas que mudam o saldo de cada conta e se anulam no consolidado — por
+isso mora em `transferencias`, não em entradas/saidas.
+
+A view `movimentos_caixa` reúne tudo o que mexeu em dinheiro — baixa de
+conta, pagamento de fatura, recebimento e as duas pernas de cada
+transferência. É a base do extrato e do fluxo de caixa realizado.
+
 ### Cartão de crédito: compra, fatura e pagamento
 
 Três coisas distintas, e confundi-las é o erro clássico:
