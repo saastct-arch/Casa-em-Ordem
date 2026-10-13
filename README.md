@@ -71,6 +71,33 @@ já significava que o dinheiro saiu). Boletos vencidos sem evidência de
 pagamento ficaram com `revisar = true`: aparecem para a família confirmar e
 ficam de fora dos alertas, para o app não alarmar sobre palpite dele mesmo.
 
+### Cartão de crédito: compra, fatura e pagamento
+
+Três coisas distintas, e confundi-las é o erro clássico:
+
+- a **compra** é a despesa, no período definido pelo fechamento do cartão;
+- a **fatura** é a conta que reúne as compras do ciclo;
+- o **pagamento da fatura** é a saída de caixa.
+
+Pagar a fatura **não cria despesa nenhuma** — se criasse, a mesma compra
+apareceria duas vezes no mês. A função de baixa avulsa recusa compras no
+crédito pelo mesmo motivo.
+
+A fatura só vira linha em `faturas_cartao` quando alguém precisa dela
+(pagar, informar o total). Até lá é o resumo calculado das compras.
+
+**Fatura consolidada.** Nem todo mundo quer digitar compra por compra: dá
+para informar só o total que veio do banco. Quando existe valor informado,
+ele **manda**, e as compras lançadas viram o detalhamento dele — a diferença
+aparece como "não detalhado". O total nunca é a soma de duas origens, então
+lançar as compras depois não infla nada. Remover o valor informado devolve o
+comando às compras.
+
+Os pagamentos de fatura moram na mesma tabela `pagamentos` das outras
+baixas: cada linha aponta para uma conta **ou** para uma fatura, nunca para
+as duas. Uma tabela só para "dinheiro que saiu" é o que deixa o fluxo de
+caixa somar sem caçar o dinheiro em três lugares.
+
 ### Administração de acessos
 
 O acesso com `pode_admin` (hoje o `1202`) cria e governa os demais pelas

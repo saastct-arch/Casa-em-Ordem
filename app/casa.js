@@ -602,7 +602,54 @@
   });
 
   // --------------------------------------------------------- faturas
+  /* Três coisas distintas, e confundi-las é o erro clássico: a COMPRA é a
+   * despesa, a FATURA é a conta que as reúne, e o PAGAMENTO da fatura é a
+   * saída de caixa. Pagar a fatura não cria despesa nenhuma — se criasse,
+   * a mesma compra apareceria duas vezes no mês.
+   */
   var faturas = {
+    /**
+     * Paga a fatura do ciclo. Sem valor, paga o que falta. Não cria saída:
+     * as compras já são a despesa.
+     */
+    async pagar(cartaoId, competencia, o) {
+      o = o || {};
+      return ok(await sb.rpc('pagar_fatura', {
+        p_cartao: cartaoId,
+        p_competencia: competencia,
+        p_valor: o.valor == null ? null : o.valor,
+        p_data: o.data || null,
+        p_forma: o.forma || null,
+        p_observacao: o.observacao || null,
+      }));
+    },
+
+    /**
+     * Total que veio do banco, para quem não quer digitar compra por
+     * compra. Passa a mandar sobre a soma das compras: se elas forem
+     * lançadas depois, viram o detalhamento desse total, e a diferença
+     * aparece como "não detalhado". É o que impede a duplicação.
+     * Mandar `null` devolve o comando para as compras lançadas.
+     */
+    async informarTotal(cartaoId, competencia, valor, observacao) {
+      return ok(await sb.rpc('informar_total_fatura', {
+        p_cartao: cartaoId,
+        p_competencia: competencia,
+        p_valor: valor == null ? null : valor,
+        p_observacao: observacao || null,
+      }));
+    },
+
+    /** Histórico de pagamentos de uma fatura, estornos inclusive. */
+    async pagamentos(faturaId) {
+      if (!faturaId) return [];
+      return ok(await de('pagamentos').select('*')
+        .eq('fatura_id', faturaId).order('data', { ascending: false }));
+    },
+
+    async estornarPagamento(id) {
+      return ok(await sb.rpc('estornar_pagamento', { p_pagamento: id }));
+    },
     /** Uma linha por cartão/ciclo, com à vista e parcelas separados. */
     async listar(cartaoId) {
       var q = de('faturas').select('*');
