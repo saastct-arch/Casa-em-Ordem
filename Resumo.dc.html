@@ -73,12 +73,7 @@
           hint-size="100%,60px"></x-import>
         <dc-import name="PeriodFilter" mode="{{ period.mode }}" month="{{ period.month }}" year="{{ period.year }}" label="{{ period.label }}" on-change="{{ onPeriodChange }}" hint-size="160px,40px"></dc-import>
       </div>
-      <sc-if value="{{ erro }}" hint-placeholder-val="{{ false }}">
-        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-control);background:var(--color-alert-soft);color:var(--color-alert);font-size:14px;font-weight:600;">
-          <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="triangle-alert" size="18" hint-size="18px,18px"></x-import>
-          {{ erro }}
-        </div>
-      </sc-if>
+      <x-import component-from-global-scope="CasaUI.FaixaErro" erro="{{ erro }}" on-tentar="{{ onRecarregar }}"></x-import>
 
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" hint-size="100%,180px" style="gap:18px;">
@@ -92,42 +87,32 @@
         <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.ProgressBar" tone="{{ progressTone }}" value="{{ pctComprometida }}" label="Renda comprometida" caption="{{ progressCaption }}" hint-size="100%,40px"></x-import>
       </x-import>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;">
+      <!-- O que ainda vai se mexer, separado do que já existe -->
+      <div style="display:grid;grid-template-columns:{{ colunasKpi }};gap:14px;">
+        <x-import component-from-global-scope="CasaUI.Indicador" rotulo="Contas a pagar" icone="arrow-up-right"
+          valor="{{ aPagarTexto }}" cor="{{ aPagarCor }}" detalhe="{{ aPagarDetalhe }}" hint-size="100%,120px"></x-import>
+        <x-import component-from-global-scope="CasaUI.Indicador" rotulo="Faturas em aberto" icone="receipt-text"
+          valor="{{ faturasTexto }}" detalhe="{{ faturasDetalhe }}" hint-size="100%,120px"></x-import>
+        <x-import component-from-global-scope="CasaUI.Indicador" rotulo="Saldo projetado" icone="trending-up"
+          valor="{{ projetadoTexto }}" cor="{{ projetadoCor }}" detalhe="Caixa − o que falta pagar" hint-size="100%,120px"></x-import>
+      </div>
 
+      <div class="casa-par-grafico" style="display:grid;grid-template-columns:{{ colunasPar }};gap:16px;align-items:stretch;">
         <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Saídas por categoria" subtitle="{{ period.label }}" hint-size="100%,260px">
-          <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
-            <div style="{{ donutStyle }}"></div>
-            <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:140px;">
-              <sc-for list="{{ categories }}" as="c" hint-placeholder-count="4">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;">
-                  <span style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-weight:500;">
-                    <span style="width:10px;height:10px;border-radius:50%;background:{{ c.color }};display:inline-block;"></span>
-                    {{ c.label }}
-                  </span>
-                  <span style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:600;color:var(--text-primary);">{{ c.formatted }}</span>
-                </div>
-              </sc-for>
-            </div>
-          </div>
+          <sc-if value="{{ temCategorias }}" hint-placeholder-val="{{ true }}">
+            <x-import component-from-global-scope="CasaUI.Barras" itens="{{ porCategoria }}" rotulo-item="Categoria" preencher="{{ true }}" hint-size="100%,220px"></x-import>
+          </sc-if>
+          <sc-if value="{{ !temCategorias }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="chart-column" title="Nada gasto no período" description="Lance um gasto para ver em que ele foi." hint-size="100%,160px"></x-import>
+          </sc-if>
         </x-import>
 
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Entradas x saídas" subtitle="Últimos 6 meses" hint-size="100%,260px">
-          <div style="display:flex;align-items:center;gap:14px;font-size:12px;color:var(--text-secondary);">
-            <span style="display:flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:50%;background:var(--money-in);display:inline-block;"></span>Entradas</span>
-            <span style="display:flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:50%;background:var(--money-out);display:inline-block;"></span>Saídas</span>
-          </div>
-          <div style="display:flex;align-items:flex-end;gap:14px;height:130px;padding-top:8px;">
-            <sc-for list="{{ months }}" as="m" hint-placeholder-count="6">
-              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;">
-                <div style="flex:1;display:flex;align-items:flex-end;gap:3px;width:100%;justify-content:center;">
-                  <div style="{{ m.inBarStyle }}"></div>
-                  <div style="{{ m.outBarStyle }}"></div>
-                </div>
-                <span style="font-size:11px;color:var(--text-secondary);font-weight:500;">{{ m.label }}</span>
-              </div>
-            </sc-for>
-          </div>
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Entradas e saídas" subtitle="Realizado nos últimos 6 meses" hint-size="100%,260px">
+          <x-import component-from-global-scope="CasaUI.Colunas" pontos="{{ evolucao }}" series="{{ seriesEvolucao }}" descricao="Entradas e saídas realizadas, mês a mês" hint-size="100%,190px"></x-import>
         </x-import>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;">
 
         <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Dívidas em aberto" subtitle="{{ dividasSubtitulo }}" hint-size="100%,260px">
           <div style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-weight:700;font-size:28px;color:var(--color-alert);letter-spacing:-0.02em;">R$ {{ debtsTotalFormatted }}</div>
@@ -147,20 +132,38 @@
           </div>
         </x-import>
 
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Faturas próximas" subtitle="Vencimento em até 7 dias" hint-size="100%,220px">
-          <div>
-            <sc-for list="{{ faturas }}" as="f" hint-placeholder-count="2">
-              <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.ListItem" title="{{ f.title }}" meta="{{ f.meta }}" amount="{{ f.amount }}" divider="{{ f.divider }}" hint-size="100%,60px"></x-import>
-            </sc-for>
-          </div>
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Faturas próximas" subtitle="{{ faturasSubtitulo }}" hint-size="100%,220px">
+          <sc-if value="{{ temFaturas }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <sc-for list="{{ faturas }}" as="f" hint-placeholder-count="2">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.ListItem" title="{{ f.title }}" meta="{{ f.meta }}" amount="{{ f.amount }}" divider="{{ f.divider }}" hint-size="100%,60px"></x-import>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ !temFaturas }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="credit-card" title="Nenhuma fatura a vencer" description="Compras no crédito aparecem aqui quando a fatura fecha." hint-size="100%,160px"></x-import>
+          </sc-if>
         </x-import>
 
-        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Alertas" subtitle="Fique de olho" hint-size="100%,220px">
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="2">
-              <span style="display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:var(--radius-pill);background:var(--color-alert-soft);color:var(--color-alert);font-size:13px;font-weight:600;">{{ a }}</span>
-            </sc-for>
-          </div>
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Alertas" subtitle="{{ alertasSubtitulo }}" hint-size="100%,220px">
+          <sc-if value="{{ temAlertas }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="2">
+                <span style="display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:var(--radius-pill);background:var(--color-alert-soft);color:var(--color-alert);font-size:13px;font-weight:600;">{{ a }}</span>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ !temAlertas }}" hint-placeholder-val="{{ false }}">
+            <!-- Linha, não EmptyState: sozinho na fileira, o estado vazio
+                 grande vira um retângulo alto e oco — o oposto do que ele
+                 deveria resolver. -->
+            <div style="display:flex;align-items:center;gap:10px;min-height:40px;padding:10px 14px;border-radius:var(--radius-md);background:var(--color-primary-soft);color:var(--color-primary);font-size:13px;font-weight:600;line-height:1.35;">
+              <span style="flex:0 0 auto;display:inline-flex;">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="check" size="{{ 16 }}" hint-size="16px,16px"></x-import>
+              </span>
+              <span>Sem conta vencida e sem fatura estourando o limite</span>
+            </div>
+          </sc-if>
         </x-import>
 
       </div>
@@ -214,6 +217,7 @@ class Component extends DCLogic {
     period: mesAtualPeriod(),
     entradas: [], saidas: [], dividas: [], cofrinhos: [], faturas: [], boletos: [],
     historico: [],
+    caixa: null,
     casaNome: '',
     erro: '',
   };
@@ -243,15 +247,18 @@ class Component extends DCLogic {
       const de = iso(new Date(hojeD.getFullYear(), hojeD.getMonth(), hojeD.getDate() - 60));
       const ate = iso(new Date(hojeD.getFullYear(), hojeD.getMonth(), hojeD.getDate() + 7));
 
-      const [entradas, saidas, dividas, cofrinhos, faturas, boletos] = await Promise.all([
+      const [entradas, saidas, dividas, cofrinhos, faturas, boletos, caixa] = await Promise.all([
         Casa.entradas.doPeriodo(this.state.period),
         Casa.saidas.doPeriodo(this.state.period),
         Casa.dividas.listar(),
         Casa.cofrinhos.listar(),
         Casa.faturas.listar(),
         Casa.saidas.boletos(de, ate),
+        // caixa, a pagar e projetado saem do banco: a tela fazendo essa
+        // conta por fora viraria um segundo número divergente do relatório
+        Casa.caixaResumo(),
       ]);
-      this.setState({ entradas, saidas, dividas, cofrinhos, faturas, boletos, erro: '' });
+      this.setState({ entradas, saidas, dividas, cofrinhos, faturas, boletos, caixa, erro: '' });
       this.carregarHistorico();
     } catch (e) {
       this.setState({ erro: e.message });
@@ -304,6 +311,19 @@ class Component extends DCLogic {
     const totalSaidas = saidasConta.reduce((t, e) => t + Number(e.valor), 0);
     const saldo = totalEntradas - totalSaidas;
 
+    /* Dois números diferentes, e misturá-los era o problema:
+         saldo    — quanto sobrou NO PERÍODO filtrado (ainda usado para a
+                    barra de renda comprometida, que é sobre o mês)
+         caixa    — quanto dinheiro EXISTE hoje, venha de qual mês vier  */
+    const c = s.caixa || {};
+    const caixa = Number(c.saldo_caixa || 0);
+    const temContas = Number(c.qtd_contas || 0) > 0;
+    const aPagar = Number(c.a_pagar || 0);
+    const vencido = Number(c.vencido || 0);
+    const faturasAbertas = Number(c.faturas_abertas || 0);
+    const aRevisar = Number(c.a_revisar || 0);
+    const projetado = Number(c.saldo_projetado || 0);
+
     const pctComprometida = totalEntradas > 0
       ? Math.min(100, Math.round((totalSaidas / totalEntradas) * 100))
       : 0;
@@ -318,31 +338,16 @@ class Component extends DCLogic {
       porCat[nome].value += Number(e.valor);
     });
     const catList = Object.keys(porCat).map(k => porCat[k]).sort((a, b) => b.value - a.value);
-    const catTotal = catList.reduce((t, c) => t + c.value, 0);
 
-    // As cores de slug vêm primeiro; o que sobra do ciclo vai para as
-    // categorias sem slug. Sem tirar as já usadas, duas fatias saíam da
-    // mesma cor (ex.: "Casa" e uma categoria nova).
-    const usadas = new Set(catList.map(c => c.slug && CAT_CORES[c.slug]).filter(Boolean));
-    const livres = CICLO_CORES.filter(cor => !usadas.has(cor));
-    let acc = 0;
-    let iCor = 0;
-    const categories = catList.map(c => {
-      const cor = (c.slug && CAT_CORES[c.slug])
-        || (livres.length ? livres[iCor++ % livres.length] : CICLO_CORES[iCor++ % CICLO_CORES.length]);
-      const pct = catTotal > 0 ? (c.value / catTotal) * 100 : 0;
-      acc += pct;
-      return { label: c.label, color: cor, formatted: 'R$ ' + formatBRL(c.value), pctEnd: acc };
-    });
-    let prev = 0;
-    const stops = categories.map(c => { const st = `${c.color} ${prev}% ${c.pctEnd}%`; prev = c.pctEnd; return st; }).join(', ');
+    /* Barras ordenadas no lugar da rosca. A rosca é boa para parte-do-todo
+       num relance, mas aqui a pergunta é "em que eu gastei MAIS" — e
+       comparar fatias de ângulo parecido é justamente o que ela faz pior.
+       Uma cor só para todas: o comprimento já diz quem é maior, e
+       escurecer a maior codificaria o mesmo dado duas vezes. */
+    const porCategoria = catList.slice(0, 7).map(c => ({ nome: c.label, valor: c.value }));
 
-    const valores = s.historico.flatMap(m => [m.inVal, m.outVal]);
-    const maxVal = valores.length ? Math.max.apply(null, valores.concat([1])) : 1;
-    const months = s.historico.map(m => ({
-      label: m.label,
-      inBarStyle: { width: 10, borderRadius: 4, background: 'var(--money-in)', height: ((m.inVal / maxVal) * 100) + '%' },
-      outBarStyle: { width: 10, borderRadius: 4, background: 'var(--money-out)', height: ((m.outVal / maxVal) * 100) + '%' },
+    const evolucao = s.historico.map(m => ({
+      rotulo: m.label, entradas: m.inVal, saidas: m.outVal,
     }));
 
     const emAberto = s.dividas.filter(d => !d.quitada && Number(d.saldo_atual) > 0);
@@ -368,10 +373,13 @@ class Component extends DCLogic {
         target: Number(c.meta_valor),
       }));
 
-    // faturas que ainda vão vencer, da mais próxima para a mais distante
+    /* Faturas que ainda vão vencer, da mais próxima para a mais distante.
+       Fatura sem lançamento nenhum fica de fora: "Cartão Inter · R$ 0,00"
+       ocupa uma linha para dizer que não há nada a pagar — é ruído com
+       cara de cobrança. */
     const hojeISO = iso(new Date());
     const aVencer = s.faturas
-      .filter(f => f.vencimento >= hojeISO)
+      .filter(f => f.vencimento >= hojeISO && Number(f.total) > 0)
       .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
     const faturas = aVencer.map((f, i) => {
       const dias = diasAte(f.vencimento);
@@ -385,8 +393,14 @@ class Component extends DCLogic {
 
     const alerts = [];
 
-    // Boleto vencido vem primeiro: é o que custa juros.
-    s.boletos.forEach(b => {
+    /* Boleto vencido vem primeiro: é o que custa juros. Só o que ainda
+       está em aberto — conta já paga aparecendo como pendência é o jeito
+       mais rápido de a família parar de confiar no alerta. O que está
+       marcado para revisão também fica fora: é palpite do próprio
+       sistema sobre histórico antigo, e alarmar sobre ele seria alarmar
+       sobre uma dúvida que ele mesmo criou. */
+    s.boletos.filter(b => !b.cancelado && !b.revisar
+                          && (b.status === 'pendente' || b.status === 'parcial')).forEach(b => {
       const nome = (b.categorias && b.categorias.nome) || 'Boleto';
       const dias = diasAte(b.vencimento);
       if (dias < 0) {
@@ -407,6 +421,10 @@ class Component extends DCLogic {
       }
     });
 
+    if (aRevisar > 0) {
+      alerts.push(`R$ ${formatBRL(aRevisar)} em lançamentos antigos esperando você confirmar se foram pagos`);
+    }
+
     return {
       isDesktop: s.isDesktop,
       casaNome: s.casaNome,
@@ -421,12 +439,34 @@ class Component extends DCLogic {
       // cópia por tela viraria dezesseis para esquecer de atualizar
       onNavigate: (id) => window.CasaNav.irPara(id),
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },
-      saldoFormatted: formatBRL(saldo),
-      // formatBRL usa Math.abs, então o sinal precisa vir à parte: sem isso
-      // um saldo de -500 aparecia como R$ 500,00, igualzinho a um positivo.
-      saldoTexto: (saldo < 0 ? '- R$ ' : 'R$ ') + formatBRL(saldo),
-      saldoCor: saldo < 0 ? 'var(--color-alert)' : 'var(--text-primary)',
-      saldoLegenda: (saldo < 0 ? 'Saldo negativo em conta · ' : 'Saldo em conta · ') + (s.period.label || ''),
+      onRecarregar: () => this.carregar(),
+      colunasKpi: s.isDesktop ? 'repeat(3, minmax(0,1fr))' : '1fr',
+      colunasPar: s.isDesktop ? 'repeat(2, minmax(0,1fr))' : '1fr',
+
+      /* O número da frente passou a ser o CAIXA, não o resultado do mês.
+         Eram coisas diferentes com o mesmo nome: entradas menos saídas do
+         período é quanto sobrou no mês, e mostrar isso como "saldo em
+         conta" prometia um dinheiro que pode já estar comprometido.
+         formatBRL usa Math.abs, então o sinal vem à parte — sem isso um
+         saldo de -500 aparecia igualzinho a um positivo. */
+      saldoTexto: (caixa < 0 ? '- R$ ' : 'R$ ') + formatBRL(caixa),
+      saldoCor: caixa < 0 ? 'var(--color-alert)' : 'var(--text-primary)',
+      /* Sem conta cadastrada o número é outro — "entrou menos saiu desde
+         que vocês usam o app" —, e a legenda precisa dizer isso, senão a
+         pessoa lê como o saldo do banco dela. */
+      saldoLegenda: temContas
+        ? (caixa < 0 ? 'Saldo em caixa, negativo' : 'Saldo em caixa hoje')
+        : (caixa < 0
+            ? 'Negativo: saiu mais do que entrou desde que vocês usam o app'
+            : 'Entrou menos saiu desde que vocês usam o app'),
+
+      aPagarTexto: 'R$ ' + formatBRL(aPagar),
+      aPagarCor: vencido > 0 ? 'var(--color-alert)' : 'var(--text-primary)',
+      aPagarDetalhe: vencido > 0 ? 'R$ ' + formatBRL(vencido) + ' já vencido' : 'nada vencido',
+      faturasTexto: 'R$ ' + formatBRL(faturasAbertas),
+      faturasDetalhe: faturasAbertas > 0 ? 'cartões a pagar' : 'nenhuma em aberto',
+      projetadoTexto: (projetado < 0 ? '- R$ ' : 'R$ ') + formatBRL(Math.abs(projetado)),
+      projetadoCor: projetado < 0 ? 'var(--color-alert)' : 'var(--text-primary)',
       pctComprometida,
       progressTone,
       progressCaption: `${pctComprometida}% da renda já comprometida este mês`,
@@ -435,18 +475,28 @@ class Component extends DCLogic {
       dividasSubtitulo: emAberto.length === 0 ? 'nenhuma em aberto'
         : emAberto.length === 1 ? '1 em aberto' : emAberto.length + ' em aberto',
       futuroSubtitulo: s.cofrinhos.length === 1 ? '1 cofrinho' : s.cofrinhos.length + ' cofrinhos',
-      categories,
-      donutStyle: {
-        width: 120, height: 120, borderRadius: '50%', flexShrink: 0,
-        background: categories.length ? `conic-gradient(${stops})` : 'var(--cream-200)',
-      },
-      months,
+      porCategoria,
+      temCategorias: porCategoria.length > 0,
+      evolucao,
+      seriesEvolucao: [
+        { chave: 'entradas', nome: 'Entradas', cor: 'var(--serie-1)' },
+        { chave: 'saidas', nome: 'Saídas', cor: 'var(--serie-4)' },
+      ],
       debts,
       debtsTotalFormatted: formatBRL(emAberto.reduce((t, d) => t + Number(d.saldo_atual), 0)),
       goals,
       futuroTotalFormatted: formatBRL(s.cofrinhos.reduce((t, c) => t + Number(c.saldo_atual), 0)),
       faturas,
+      /* O subtítulo dizia "Vencimento em até 7 dias" e a lista mostrava
+         fatura para dali a 23 dias. Agora ele conta o que está na tela. */
+      temFaturas: faturas.length > 0,
+      faturasSubtitulo: faturas.length === 0 ? 'Nenhuma em aberto'
+        : faturas.length === 1 ? '1 a vencer' : faturas.length + ' a vencer',
       alerts,
+      /* Cartão de alerta vazio é um retângulo em branco com título — o
+         vazio precisa dizer alguma coisa, e aqui ele diz a melhor delas. */
+      temAlertas: alerts.length > 0,
+      alertasSubtitulo: alerts.length === 0 ? 'Tudo em dia' : 'Fique de olho',
     };
   }
 }

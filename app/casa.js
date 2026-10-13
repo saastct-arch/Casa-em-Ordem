@@ -532,11 +532,15 @@
      * daqui que Resumo e Faturas a chamam — estava em `faturas` por engano, e
      * `Casa.saidas.boletos` indefinido derrubava o carregamento das duas telas.
      */
-    async boletos(de, ate) {
+    /* Os parâmetros não se chamam `de`/`ate` de propósito: `de` é a função
+       que embute o ambiente na consulta, e um parâmetro com esse nome a
+       sombreava — `de('saidas')` virava "a string não é função" e a tela
+       inteira morria. */
+    async boletos(desde, ate) {
       var q = de('saidas')
         .select('*, categorias(nome, slug), membros(nome)')
         .eq('forma_pagamento', 'boleto');
-      if (de) q = q.gte('vencimento', de);
+      if (desde) q = q.gte('vencimento', desde);
       if (ate) q = q.lte('vencimento', ate);
       return ok(await q.order('vencimento'));
     },

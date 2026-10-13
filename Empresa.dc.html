@@ -122,7 +122,29 @@
         </div>
       </sc-if>
 
-      <div style="display:grid;grid-template-columns:{{ colunasListas }};gap:16px;">
+      <div class="casa-par-grafico" style="display:grid;grid-template-columns:{{ colunasListas }};gap:16px;align-items:stretch;">
+        <!-- EVOLUÇÃO: só o que de fato entrou e saiu, mês a mês -->
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Receitas e despesas" subtitle="{{ evolucaoSubtitulo }}" hint-size="100%,auto">
+          <sc-if value="{{ temEvolucao }}" hint-placeholder-val="{{ true }}">
+            <x-import component-from-global-scope="CasaUI.Colunas" pontos="{{ evolucao }}" series="{{ seriesEvolucao }}" descricao="Receitas e despesas realizadas, mês a mês" hint-size="100%,190px"></x-import>
+          </sc-if>
+          <sc-if value="{{ !temEvolucao }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="chart-column" title="Sem histórico ainda" description="Os meses aparecem aqui conforme a empresa for tendo movimento." hint-size="100%,160px"></x-import>
+          </sc-if>
+        </x-import>
+
+        <!-- PARA ONDE FOI: barras ordenadas, não rosca -->
+        <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Despesas por categoria" subtitle="{{ categoriasSubtitulo }}" hint-size="100%,auto">
+          <sc-if value="{{ temCategorias }}" hint-placeholder-val="{{ true }}">
+            <x-import component-from-global-scope="CasaUI.Barras" itens="{{ porCategoria }}" rotulo-item="Categoria" preencher="{{ true }}" hint-size="100%,220px"></x-import>
+          </sc-if>
+          <sc-if value="{{ !temCategorias }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.EmptyState" icon="chart-column" title="Nada gasto no período" description="Lance uma despesa para ver em que ela foi." hint-size="100%,160px"></x-import>
+          </sc-if>
+        </x-import>
+      </div>
+
+      <div style="display:grid;grid-template-columns:{{ colunasListas }};gap:16px;align-items:start;">
         <!-- PRÓXIMOS VENCIMENTOS -->
         <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Card" title="Contas a pagar" subtitle="{{ aPagarSubtitulo }}" hint-size="100%,auto">
           <sc-if value="{{ temContasAPagar }}" hint-placeholder-val="{{ true }}">
@@ -210,6 +232,7 @@ class Component extends DCLogic {
     aPagar: [],
     aReceber: [],
     hoje: '',
+    historico: [],
     erro: '',
   };
 
@@ -254,6 +277,7 @@ class Component extends DCLogic {
         Casa.entradas.listar({}),
       ]);
 
+      this.carregarHistorico();
       this.setState({
         caixa, entradas, saidas, hoje, erro: '',
         aPagar: (aPagar || []).filter(s =>
@@ -264,6 +288,40 @@ class Component extends DCLogic {
     } catch (e) {
       this.setState({ erro: e.message });
     }
+  }
+
+  /* Seis meses de realizado, numa consulta só. Um pedido por mês seriam
+     doze idas ao servidor para desenhar um gráfico. */
+  async carregarHistorico() {
+    try {
+      const hoje = new Date();
+      const inicio = new Date(hoje.getFullYear(), hoje.getMonth() - 5, 1);
+      const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+      const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+                       + '-' + String(d.getDate()).padStart(2, '0');
+      const janela = { mode: 'periodo', startDate: iso(inicio), endDate: iso(fim) };
+      const [ent, sai] = await Promise.all([
+        Casa.entradas.doPeriodo(janela),
+        Casa.saidas.doPeriodo(janela),
+      ]);
+
+      const meses = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+        meses.push({
+          chave: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
+          rotulo: ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][d.getMonth()],
+          recebido: 0, pago: 0,
+        });
+      }
+      const achar = (data) => meses.find(m => String(data || '').slice(0, 7) === m.chave);
+      // Realizado, não lançado: a data que importa é a do dinheiro.
+      (ent || []).forEach(e => { const m = achar(e.data_recebimento || e.data);
+        if (m) m.recebido += Number(e.valor_recebido || 0); });
+      (sai || []).forEach(x => { const m = achar(x.data_pagamento || x.data);
+        if (m) m.pago += Number(x.valor_pago || 0); });
+      this.setState({ historico: meses });
+    } catch (e) { /* o gráfico some, a tela continua */ }
   }
 
   renderVals() {
@@ -315,6 +373,19 @@ class Component extends DCLogic {
       if (!pago && Casa.vencida(linha, s.hoje)) return 'vencida';
       return linha.status;
     };
+
+    // Para onde o dinheiro foi: barras ordenadas. Uma cor só para todas —
+    // escurecer a maior codificaria duas vezes o que o comprimento já diz.
+    const porCat = new Map();
+    s.saidas.forEach(x => {
+      if (x.cancelado) return;
+      const nome = (x.categorias && x.categorias.nome) || 'Sem categoria';
+      porCat.set(nome, (porCat.get(nome) || 0) + num(x.valor));
+    });
+    const porCategoria = [...porCat.entries()]
+      .map(([nome, valor]) => ({ nome, valor }))
+      .sort((a, b) => b.valor - a.valor)
+      .slice(0, 7);
 
     const ordenaPorVencimento = (a, b) =>
       String(a.vencimento || '9999').localeCompare(String(b.vencimento || '9999'));
@@ -374,6 +445,20 @@ class Component extends DCLogic {
 
       alertas,
       temAlertas: alertas.length > 0,
+
+      evolucao: s.historico,
+      temEvolucao: s.historico.some(m => m.recebido > 0 || m.pago > 0),
+      seriesEvolucao: [
+        { chave: 'recebido', nome: 'Recebido', cor: 'var(--serie-1)' },
+        { chave: 'pago', nome: 'Pago', cor: 'var(--serie-4)' },
+      ],
+      evolucaoSubtitulo: 'Realizado nos últimos 6 meses',
+
+      porCategoria,
+      temCategorias: porCategoria.length > 0,
+      categoriasSubtitulo: porCategoria.length
+        ? 'Lançado em ' + (s.period.label || '') : (s.period.label || ''),
+
 
       contasAPagar,
       temContasAPagar: contasAPagar.length > 0,
