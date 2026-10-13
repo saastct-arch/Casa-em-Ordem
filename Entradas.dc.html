@@ -82,6 +82,11 @@
 
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="primary" icon="arrow-down-left" label="Total de outubro" value="{{ totalMes }}" hint-size="100%,130px"></x-import>
+      <!-- O total soma o que foi lançado; parte pode ser cobrança que
+           ainda não caiu. Sem esta linha o número vira dinheiro imaginário. -->
+      <sc-if value="{{ temAReceber }}" hint-placeholder-val="{{ true }}">
+        <span style="margin-top:-10px;font-size:13px;color:var(--text-secondary);">{{ resumoSituacao }}</span>
+      </sc-if>
 
       <div style="position:sticky;top:0;z-index:5;padding:2px 0;background:var(--bg-app);">
         <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="{{ toggleIcon }}" on-click="{{ onToggleForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
@@ -135,6 +140,24 @@
             </div>
           </sc-if>
 
+          <!-- Entrada que ainda não caiu. Sem isto, lançar uma cobrança
+               futura inflava o caixa com dinheiro que não existe. -->
+          <sc-if value="{{ podeAgendar }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <button type="button" onClick="{{ onAReceber }}" style="{{ aReceberStyle }}">
+                <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Icon" name="{{ aReceberIcone }}" size="17" hint-size="17px,17px"></x-import>
+                Ainda vou receber
+              </button>
+              <sc-if value="{{ aReceber }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Previsão de recebimento</label>
+                  <input type="date" value="{{ form.vencimento }}" onChange="{{ onVencimentoChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;"></input>
+                  <span style="font-size:12px;color:var(--text-secondary);">Fica como cobrança em aberto e só entra no caixa quando você der baixa.</span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
           <div style="display:flex;flex-direction:column;gap:6px;">
             <label style="font-size:13px;font-weight:600;color:var(--text-primary);">Membro da família</label>
             <select class="ceo-select" value="{{ form.membro }}" onChange="{{ onMembroChange }}" style="height:var(--control-h);padding:0 14px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:15px;color:var(--text-primary);outline:none;">
@@ -149,6 +172,17 @@
           </div>
         </div>
       </sc-if>
+
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:13px;font-weight:600;color:var(--text-primary);">Situação</span>
+        <select class="ceo-select" value="{{ filtroStatus }}" onChange="{{ onFiltroStatus }}" style="height:var(--control-h-sm);padding:0 12px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:13px;color:var(--text-primary);outline:none;">
+          <option value="todos">Todas</option>
+          <option value="aberto">A receber</option>
+          <option value="vencida">Atrasadas</option>
+          <option value="parcial">Recebidas em parte</option>
+          <option value="recebido">Recebidas</option>
+        </select>
+      </div>
 
       <div style="display:flex;flex-direction:column;gap:20px;">
         <sc-for list="{{ groups }}" as="group" hint-placeholder-count="3">
@@ -169,14 +203,44 @@
                     <sc-if value="{{ item.isBeneficio }}" hint-placeholder-val="{{ false }}">
                       <span style="display:inline-flex;align-self:flex-start;align-items:center;height:22px;padding:0 10px;border-radius:var(--radius-pill);background:var(--color-accent-soft);color:var(--gold-700);font-size:11.5px;font-weight:600;">{{ item.carteira }}</span>
                     </sc-if>
+                    <sc-if value="{{ item.mostraSelo }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                        <x-import component-from-global-scope="CasaUI.Selo" status="{{ item.statusKey }}" texto="{{ item.statusRotulo }}" hint-size="auto,24px"></x-import>
+                        <sc-if value="{{ item.statusTexto }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size:12px;color:var(--text-secondary);">{{ item.statusTexto }}</span>
+                        </sc-if>
+                      </div>
+                    </sc-if>
                   </div>
                   <span style="font-family:var(--font-numeric);font-feature-settings:var(--num-features);font-size:15px;font-weight:600;color:var(--money-in);white-space:nowrap;">+ R$ {{ item.amountFormatted }}</span>
-                  <div style="display:flex;gap:2px;">
+                  <div style="display:flex;gap:2px;align-items:center;">
+                    <sc-if value="{{ item.podeReceber }}" hint-placeholder-val="{{ false }}">
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="circle-check" label="Dar baixa" size="32" on-click="{{ item.onReceber }}" hint-size="32px,32px"></x-import>
+                    </sc-if>
+                    <sc-if value="{{ item.podeDesfazer }}" hint-placeholder-val="{{ false }}">
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ item.onDesfazer }}" hint-size="auto,32px">Desfazer baixa</x-import>
+                    </sc-if>
                     <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="pencil" label="Editar" size="32" on-click="{{ item.onEdit }}" hint-size="32px,32px"></x-import>
                     <sc-if value="{{ !item.isResgate }}" hint-placeholder-val="{{ true }}">
                       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.IconButton" icon="trash-2" label="Excluir" size="32" tone="danger" on-click="{{ item.onDelete }}" hint-size="32px,32px"></x-import>
                     </sc-if>
                   </div>
+
+                  <sc-if value="{{ item.recebendo }}" hint-placeholder-val="{{ false }}">
+                    <div style="width:100%;display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;padding:12px 10px 4px;border-top:1px dashed var(--border-default);">
+                      <div style="display:flex;flex-direction:column;gap:4px;">
+                        <label style="font-size:12px;font-weight:600;color:var(--text-secondary);">Valor recebido</label>
+                        <input type="text" inputmode="decimal" value="{{ baixaValor }}" onChange="{{ onBaixaValor }}" style="width:120px;height:var(--control-h-sm);padding:0 10px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-numeric);font-size:14px;color:var(--text-primary);outline:none;"></input>
+                      </div>
+                      <div style="display:flex;flex-direction:column;gap:4px;">
+                        <label style="font-size:12px;font-weight:600;color:var(--text-secondary);">Quando entrou</label>
+                        <input type="date" value="{{ baixaData }}" onChange="{{ onBaixaData }}" style="height:var(--control-h-sm);padding:0 10px;border:1px solid var(--border-strong);border-radius:var(--radius-control);background:var(--surface-card);font-family:var(--font-body);font-size:14px;color:var(--text-primary);outline:none;"></input>
+                      </div>
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="sm" on-click="{{ item.onReceberTudo }}" hint-size="auto,36px">Recebi tudo (R$ {{ item.faltaFormatted }})</x-import>
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="soft" size="sm" on-click="{{ item.onReceberValor }}" hint-size="auto,36px">Recebi esse valor</x-import>
+                      <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="ghost" size="sm" on-click="{{ item.onCancelarBaixa }}" hint-size="auto,36px">Cancelar</x-import>
+                    </div>
+                  </sc-if>
                 </div>
               </sc-for>
             </x-import>
@@ -192,6 +256,10 @@
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
+/* Data curta vem do CasaUI para o formato ser o mesmo em toda a aplicação. */
+function dataCurta(iso) {
+  return (window.CasaUI && window.CasaUI.dataCurta) ? window.CasaUI.dataCurta(iso) : (iso || '');
+}
 function formatBRL(n) {
   return Math.abs(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -233,7 +301,11 @@ class Component extends DCLogic {
     editingId: null,
     casaNome: '',
     erro: '',
-    form: { valor: 0, data: hojeISO(), tipo: 'salario', membro: '', cofrinho: '', carteira: '' },
+    filtroStatus: 'todos',
+    // Receber é o espelho de pagar: a obrigação existe antes do dinheiro.
+    baixaId: null, baixaValor: '', baixaData: '',
+    hoje: hojeISO(),
+    form: { valor: 0, data: hojeISO(), tipo: 'salario', membro: '', cofrinho: '', carteira: '', aReceber: false, vencimento: hojeISO() },
   };
 
   componentDidMount() {
@@ -255,16 +327,18 @@ class Component extends DCLogic {
         const casa = await Casa.casaAtual();
         this.setState({ casaNome: casa.nome });
       }
-      const [entries, categorias, membros, cofrinhos, carteiras] = await Promise.all([
+      const [entries, categorias, membros, cofrinhos, carteiras, hoje] = await Promise.all([
         Casa.entradas.doPeriodo(this.state.period),
         Casa.categorias.listarPorTipo('entrada'),
         Casa.membros.listar(),
         Casa.cofrinhos.listar(),
         Casa.carteiras.listar({ ativa: true }),
+        // Quem decide se uma cobrança está atrasada é o relógio do servidor.
+        Casa.hoje(),
       ]);
       const f = this.state.form;
       this.setState({
-        entries, categorias, membros, cofrinhos, carteiras, erro: '',
+        entries, categorias, membros, cofrinhos, carteiras, hoje, erro: '',
         form: {
           ...f,
           membro: f.membro || (membros[0] ? membros[0].id : ''),
@@ -328,9 +402,14 @@ class Component extends DCLogic {
         if (this.state.editingId) await Casa.entradas.atualizar(this.state.editingId, dados);
         else await Casa.entradas.criar(dados);
       } else {
+        /* Sem previsão, a entrada nasce recebida — é o caso do salário que
+           já caiu. Com previsão, ela nasce como cobrança em aberto e só
+           entra no caixa quando alguém der baixa. Quem faz essa distinção
+           é o `vencimento`, igual ao lado das saídas. */
         const dados = {
           descricao: TIPOS.find(t => t.id === f.tipo).label,
           valor: f.valor, data: f.data,
+          vencimento: f.aReceber ? (f.vencimento || f.data) : null,
           categoria_id: this.catIdDoTipo(f.tipo),
           membro_id: f.membro || null,
           tipo: 'normal', cofrinho_id: null, carteira_id: null,
@@ -341,8 +420,52 @@ class Component extends DCLogic {
 
       this.setState({
         formOpen: false, editingId: null, erro: '',
-        form: { valor: 0, data: f.data, tipo: 'salario', membro: f.membro, cofrinho: f.cofrinho, carteira: f.carteira },
+        form: { valor: 0, data: f.data, tipo: 'salario', membro: f.membro, cofrinho: f.cofrinho, carteira: f.carteira, aReceber: false, vencimento: f.vencimento || hojeISO() },
       });
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message });
+    }
+  }
+
+  /* ------------------------------------------------- baixa de recebimento
+     Mesmo princípio do lado das saídas: a linha é a cobrança, o
+     recebimento é o dinheiro entrando. Quem sabe o saldo é o servidor. */
+  falta(entry) {
+    const recebido = Number(entry.valor_recebido || 0);
+    return Math.max(0, Number((Number(entry.valor) - recebido).toFixed(2)));
+  }
+
+  abrirBaixa(entry) {
+    this.setState({
+      baixaId: entry.id,
+      baixaValor: this.falta(entry).toFixed(2),
+      baixaData: this.state.hoje || hojeISO(),
+    });
+  }
+
+  fecharBaixa() { this.setState({ baixaId: null, baixaValor: '', baixaData: '' }); }
+
+  async confirmarBaixa(entry, tudo) {
+    const valor = tudo ? null : Number(String(this.state.baixaValor).replace(',', '.'));
+    if (!tudo && (!isFinite(valor) || valor <= 0)) {
+      return this.setState({ erro: 'Informe um valor maior que zero para a baixa.' });
+    }
+    try {
+      await Casa.entradas.receber(entry.id, { valor, data: this.state.baixaData || null });
+      this.fecharBaixa();
+      await this.carregar();
+    } catch (e) {
+      this.setState({ erro: e.message });
+      this.fecharBaixa();
+    }
+  }
+
+  async desfazerBaixa(entry) {
+    try {
+      const recebidos = (await Casa.entradas.recebimentos(entry.id)).filter(r => !r.estornado);
+      if (!recebidos.length) return this.setState({ erro: 'Esta cobrança não tem baixa para desfazer.' });
+      await Casa.entradas.estornarRecebimento(recebidos[0].id);
       await this.carregar();
     } catch (e) {
       this.setState({ erro: e.message });
@@ -358,6 +481,8 @@ class Component extends DCLogic {
         membro: entry.membro_id || '',
         cofrinho: entry.cofrinho_id || (this.state.cofrinhos[0] ? this.state.cofrinhos[0].id : ''),
         carteira: entry.carteira_id || (this.state.carteiras[0] ? this.state.carteiras[0].id : ''),
+        aReceber: !!entry.vencimento,
+        vencimento: entry.vencimento || entry.data,
       },
     });
   }
@@ -372,17 +497,53 @@ class Component extends DCLogic {
   renderVals() {
     const { entries, form, formOpen } = this.state;
     const totalMes = entries.reduce((s, e) => s + Number(e.valor), 0);
+    /* Quanto já entrou de verdade e quanto ainda é cobrança. */
+    const jaRecebido = entries.reduce((t, e) => t + Number(e.valor_recebido || 0), 0);
+    const aReceberTotal = entries.reduce((t, e) => {
+      if (e.cancelado) return t;
+      return t + Math.max(0, Number(e.valor) - Number(e.valor_recebido || 0));
+    }, 0);
 
     const byDate = {};
     entries.forEach(e => { (byDate[e.data] = byDate[e.data] || []).push(e); });
     const groups = Object.keys(byDate).sort((a, b) => b.localeCompare(a)).map(d => ({
       label: dateLabel(d),
-      items: byDate[d].map(e => {
+      items: byDate[d]
+        .filter(e => {
+          if (this.state.filtroStatus === 'todos') return true;
+          if (this.state.filtroStatus === 'vencida') return Casa.vencida(e, this.state.hoje);
+          if (this.state.filtroStatus === 'aberto') return e.status === 'previsto' || e.status === 'parcial';
+          return e.status === this.state.filtroStatus;
+        })
+        .map(e => {
         const tipoId = this.tipoDaEntrada(e);
         const t = TIPOS.find(x => x.id === tipoId);
         const isResgate = tipoId === 'resgate';
         const isBeneficio = tipoId === 'beneficio';
+        /* Entrada sem previsão nasce recebida: selo ali não informaria
+           nada. O selo aparece onde havia uma cobrança esperando. */
+        const temPrazo = !!e.vencimento;
+        const atrasada = Casa.vencida(e, this.state.hoje);
+        const falta = this.falta(e);
         return {
+          mostraSelo: temPrazo || e.status === 'parcial' || e.status === 'cancelado',
+          statusKey: atrasada ? 'vencida' : (e.status || 'recebido'),
+          /* O rótulo padrão de `parcial` fala a língua das contas a pagar
+             ("Pago em parte"). Aqui quem recebe é a casa. */
+          statusRotulo: (!atrasada && e.status === 'parcial') ? 'Recebido em parte' : '',
+          statusTexto: e.status === 'parcial'
+            ? 'Falta R$ ' + formatBRL(falta)
+            : (atrasada ? 'Venceu em ' + dataCurta(e.vencimento)
+              : (temPrazo && e.status === 'previsto' ? 'Previsto para ' + dataCurta(e.vencimento) : '')),
+          podeReceber: temPrazo && (e.status === 'previsto' || e.status === 'parcial'),
+          podeDesfazer: temPrazo && (e.status === 'recebido' || e.status === 'parcial'),
+          faltaFormatted: formatBRL(falta),
+          recebendo: this.state.baixaId === e.id,
+          onReceber: () => this.abrirBaixa(e),
+          onReceberTudo: () => this.confirmarBaixa(e, true),
+          onReceberValor: () => this.confirmarBaixa(e, false),
+          onCancelarBaixa: () => this.fecharBaixa(),
+          onDesfazer: () => this.desfazerBaixa(e),
           icon: t.icon,
           tipoLabel: t.label,
           membroLabel: (e.membros && e.membros.nome) || '—',
@@ -393,7 +554,7 @@ class Component extends DCLogic {
           amountFormatted: formatBRL(Number(e.valor)),
           onEdit: () => this.edit(e),
           onDelete: () => this.remove(e),
-          rowStyle: { display: 'flex', alignItems: 'center', gap: 14, padding: '14px 10px', borderBottom: '1px solid var(--border-default)' },
+          rowStyle: { display: 'flex', alignItems: 'center', gap: 14, padding: '14px 10px', flexWrap: 'wrap', borderBottom: '1px solid var(--border-default)' },
           iconWrapStyle: {
             width: 40, height: 40, flexShrink: 0, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: isResgate ? 'var(--gold-100)' : 'var(--color-primary-soft)', color: isResgate ? 'var(--gold-700)' : 'var(--color-primary)',
@@ -435,6 +596,9 @@ class Component extends DCLogic {
       onNavigate: (id) => window.CasaNav.irPara(id),
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },
       totalMes,
+      temAReceber: aReceberTotal > 0,
+      resumoSituacao: 'R$ ' + formatBRL(jaRecebido) + ' já entrou · R$ '
+        + formatBRL(aReceberTotal) + ' ainda a receber',
       formOpen,
       // Janela flutuante: no celular sobe como folha pelo rodapé, no
       // desktop abre centrada. Antes o formulário ficava fixo na página e
@@ -472,6 +636,27 @@ class Component extends DCLogic {
       onMembroChange: (e) => this.setForm({ membro: e.target.value }),
       onSave: () => this.save(),
       groups,
+      filtroStatus: this.state.filtroStatus,
+      onFiltroStatus: (ev) => this.setState({ filtroStatus: ev.target.value }),
+      baixaValor: this.state.baixaValor,
+      baixaData: this.state.baixaData,
+      onBaixaValor: (ev) => this.setState({ baixaValor: ev.target.value }),
+      onBaixaData: (ev) => this.setState({ baixaData: ev.target.value }),
+      /* Resgate e crédito de benefício não se agendam: o primeiro é um
+         saque que acontece na hora, o segundo cai no cartão. */
+      podeAgendar: form.tipo !== 'resgate' && form.tipo !== 'beneficio',
+      aReceber: form.aReceber,
+      aReceberIcone: form.aReceber ? 'circle-check' : 'calendar',
+      aReceberStyle: {
+        display: 'inline-flex', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
+        height: 36, padding: '0 14px', borderRadius: 'var(--radius-pill)', cursor: 'pointer',
+        fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
+        border: form.aReceber ? 'none' : '1px dashed var(--border-strong)',
+        background: form.aReceber ? 'var(--color-primary-soft)' : 'transparent',
+        color: form.aReceber ? 'var(--emerald-800)' : 'var(--text-secondary)',
+      },
+      onAReceber: () => this.setForm({ aReceber: !form.aReceber }),
+      onVencimentoChange: (ev) => this.setForm({ vencimento: ev.target.value }),
     };
   }
 }

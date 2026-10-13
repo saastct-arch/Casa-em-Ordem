@@ -82,6 +82,11 @@
 
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.SummaryCard" tone="primary" icon="arrow-up-right" label="Total do mês" value="{{ totalMes }}" hint-size="100%,130px"></x-import>
+      <!-- O total soma obrigações; parte delas ainda não saiu do caixa.
+           Dizer isso aqui evita ler o número como dinheiro já gasto. -->
+      <sc-if value="{{ temEmAberto }}" hint-placeholder-val="{{ true }}">
+        <span style="margin-top:-10px;font-size:13px;color:var(--text-secondary);">{{ resumoSituacao }}</span>
+      </sc-if>
 
       <x-import component-from-global-scope="CasaEmOrdemDesignSystem_c16053.Button" variant="primary" size="lg" full-width="{{ true }}" icon="plus" on-click="{{ onAbrirForm }}" hint-size="100%,52px">{{ toggleLabel }}</x-import>
 
@@ -861,6 +866,14 @@ class Component extends DCLogic {
         }),
     })).filter(g => g.items.length);
 
+    /* Quanto do mês já virou dinheiro saindo e quanto ainda é promessa.
+       Compra no crédito conta como em aberto: quem paga é a fatura. */
+    const jaPago = s.entries.reduce((t, e) => t + Number(e.valor_pago || 0), 0);
+    const emAberto = s.entries.reduce((t, e) => {
+      if (e.cancelado) return t;
+      return t + Math.max(0, Number(e.valor) - Number(e.valor_pago || 0));
+    }, 0);
+
     const parcelasNum = Number(f.parcelas) || 0;
     const parcelaValor = parcelasNum > 0 ? f.valor / parcelasNum : 0;
 
@@ -879,6 +892,9 @@ class Component extends DCLogic {
       onNavigate: (id) => window.CasaNav.irPara(id),
       onSettings: () => { window.location.href = 'Configurações.dc.html'; },
       totalMes: s.entries.reduce((sum, e) => sum + Number(e.valor), 0),
+      temEmAberto: emAberto > 0,
+      resumoSituacao: 'R$ ' + formatBRL(jaPago) + ' já saiu do caixa · R$ '
+        + formatBRL(emAberto) + ' ainda em aberto',
       formTitle: s.editingId ? 'Editar gasto' : 'Novo gasto',
       toggleLabel: 'Novo gasto',
       formOpen: s.formOpen,

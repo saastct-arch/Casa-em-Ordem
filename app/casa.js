@@ -251,7 +251,11 @@
   function vencida(lanc, dia) {
     if (!lanc || !lanc.vencimento) return false;
     if (lanc.revisar) return false;
-    if (lanc.status !== 'pendente' && lanc.status !== 'parcial') return false;
+    /* `previsto` é o nome que a entrada usa para o que a saída chama de
+       `pendente`: cobrança que ainda não foi recebida. Sem ele aqui,
+       "contas a receber vencidas" nunca aparecia atrasada. */
+    if (lanc.status !== 'pendente' && lanc.status !== 'previsto'
+        && lanc.status !== 'parcial') return false;
     return lanc.vencimento < (dia || hojeCache || localIso(new Date()));
   }
 
