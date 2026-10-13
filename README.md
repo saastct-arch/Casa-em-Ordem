@@ -71,6 +71,47 @@ já significava que o dinheiro saiu). Boletos vencidos sem evidência de
 pagamento ficaram com `revisar = true`: aparecem para a família confirmar e
 ficam de fora dos alertas, para o app não alarmar sobre palpite dele mesmo.
 
+### Retirada e aporte: o dinheiro que atravessa a fronteira
+
+O dono tira dinheiro da empresa para viver e às vezes põe do bolso para ela
+respirar. Marcar o lançamento de um lado cria o outro:
+
+| | fluxo | lança-se | nasce |
+|---|---|---|---|
+| **retirada** | PJ → PF | saída no PJ | entrada no PF |
+| **aporte** | PF → PJ | saída no PF | entrada no PJ |
+
+Também funciona ao contrário: lançar a entrada no PF como retirada cria a
+saída no PJ. Qualquer uma das quatro combinações completa o par.
+
+A natureza da retirada é **pró-labore**, **lucros**, **reembolso** ou
+**outra**. "Retirada" é o guarda-chuva porque pró-labore é só *um tipo* de
+retirada — o salário do sócio, com efeito em folha. Chamar distribuição de
+lucros de pró-labore rotularia errado algo com consequência fiscal.
+
+**Por que não é uma transferência.** Transferência entre contas da mesma
+pessoa não é receita nem despesa: o dinheiro só mudou de lugar. Retirada é
+outra coisa — ele passa entre **duas entidades**. Sai do caixa da empresa
+(despesa dela) e vira renda da pessoa. Por isso são mesmo uma saída e uma
+entrada, ligadas por um vínculo.
+
+O par nasce no banco, por trigger, e não na tela: vale para qualquer caminho
+de escrita, então não existe o caso de alguém lançar um lado e esquecer o
+outro. Mudar valor ou data de um lado muda o outro; excluir qualquer uma das
+pontas leva a outra junto — meia retirada faria os dois ambientes mentirem.
+
+### Correção não é pagamento parcial
+
+Lançar "mercado, R$ 100, pix" cria a baixa automática de 100. Corrigir para
+150 deixaria a conta em "parcial, faltam 50" — como se a pessoa tivesse pago
+só uma parte. Mas ela não pagou pela metade: digitou errado.
+
+A origem da baixa separa os casos. A **automática** nasceu junto com o
+lançamento, é parte dele e acompanha a correção. A **manual** registra "paguei
+X no dia Y" — isso é um fato, e o sistema não reescreve fato por conta
+própria: havendo pagamento manual em cima, mudar o valor gera mesmo saldo em
+aberto.
+
 ### Saldo em caixa e saldo projetado
 
 Dois números que respondem perguntas diferentes, e misturá-los é o que faz

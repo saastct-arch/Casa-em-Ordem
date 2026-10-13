@@ -677,6 +677,82 @@
     },
   };
 
+  // ------------------------------------------------ retirada e aporte
+  /* O dinheiro que atravessa a fronteira entre a empresa e a pessoa.
+   *
+   * Não é transferência: transferência entre contas da mesma pessoa não é
+   * receita nem despesa, porque o dinheiro só mudou de lugar. Aqui ele
+   * passa entre DUAS ENTIDADES — sai do caixa da empresa (despesa dela) e
+   * vira renda da pessoa. Por isso são mesmo uma saída e uma entrada, uma
+   * em cada ambiente, ligadas por um vínculo.
+   *
+   * Basta lançar um lado: o banco cria o outro. Vale para qualquer caminho
+   * de escrita, então não existe o caso de alguém lançar metade.
+   *
+   * "Retirada" é o guarda-chuva, e a natureza diz qual é — pró-labore é só
+   * um tipo de retirada, e chamar distribuição de lucros de pró-labore
+   * rotularia errado algo com consequência fiscal.
+   */
+  var vinculos = {
+    NATUREZAS: [
+      { valor: 'pro_labore', rotulo: 'Pró-labore' },
+      { valor: 'lucros',     rotulo: 'Distribuição de lucros' },
+      { valor: 'reembolso',  rotulo: 'Reembolso de despesa' },
+      { valor: 'outra',      rotulo: 'Outra' },
+    ],
+
+    /**
+     * Empresa paga o sócio. Entra como saída no PJ — e o ambiente aqui é
+     * do conceito, não da tela em que a pessoa está, por isso não passa
+     * pelo carimbo automático.
+     */
+    async retirada(o) {
+      return ok(await sb.from('saidas').insert({
+        ambiente: 'pj',
+        vinculo_tipo: 'retirada',
+        natureza: o.natureza || 'pro_labore',
+        descricao: o.descricao || 'Retirada',
+        valor: o.valor,
+        data: o.data || undefined,
+        forma_pagamento: o.forma || 'pix',
+        membro_id: o.membroId || null,
+        observacao: o.observacao || null,
+      }).select().single());
+    },
+
+    /** Sócio põe dinheiro na empresa. Entra como saída no PF. */
+    async aporte(o) {
+      return ok(await sb.from('saidas').insert({
+        ambiente: 'pf',
+        vinculo_tipo: 'aporte',
+        descricao: o.descricao || 'Aporte na empresa',
+        valor: o.valor,
+        data: o.data || undefined,
+        forma_pagamento: o.forma || 'pix',
+        membro_id: o.membroId || null,
+        observacao: o.observacao || null,
+      }).select().single());
+    },
+
+    /** Retiradas e aportes do período, os dois lados de uma vez só. */
+    async listar(p) {
+      var q = sb.from('vinculos_pf_pj').select('*');
+      if (p) {
+        var r = periodoRange(p);
+        q = q.gte('data', r.de).lte('data', r.ate);
+      }
+      return ok(await q.order('data', { ascending: false }));
+    },
+
+    /**
+     * Desfaz os dois lados de uma vez. Excluir só uma das pontas também
+     * leva a outra — o banco não deixa meia retirada existir.
+     */
+    async excluir(id) {
+      return ok(await sb.from('vinculos_pf_pj').delete().eq('id', id).select());
+    },
+  };
+
   // ------------------------------------------------------- caixa
   /* Dois números que respondem perguntas diferentes, e misturá-los é o
    * erro que faz o app prometer dinheiro que não existe:
@@ -840,6 +916,7 @@
     faturas: faturas,
     contas: contas,
     caixaResumo: caixaResumo,
+    vinculos: vinculos,
     acessos: acessos,
     aoMudar: aoMudar,
   };
